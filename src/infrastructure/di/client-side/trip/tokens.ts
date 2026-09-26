@@ -23,4 +23,6 @@ export const TRIP_TOKENS = {
   IGetWeather: 'IGetWeather',
   IGetAllTripGroups: 'IGetAllTripGroups',
   IGetUserGroups: 'IGetUserGroups',
+  ITripGroupRepository: 'ITripGroupRepository',
+  IGroupMemberRepository: 'IGroupMemberRepository',
 };

@@ -2,7 +2,7 @@ import { inject, injectable } from 'tsyringe';
 
 import { IJoinGroupCallUseCase } from '../../interfaces/use-cases/calls/join-group-call.interface';
 import { ICallRepository } from '../../interfaces/repositories/call.repository.interface';
-import { ITripRepository } from '../../interfaces/repositories/trip.repository';
+import { IGroupMemberRepository } from '../../interfaces/repositories/group-member.repository';
 import { TOKENS } from '../../../infrastructure/di/tokens';
 import { CallDTO } from '../../dtos/call/request/call.dto';
 import { ICallNotificationService } from '../../interfaces/services/call-notification.service.interface';
@@ -14,8 +14,8 @@ export class JoinGroupCallUseCase implements IJoinGroupCallUseCase {
     @inject(TOKENS.ICallRepository)
     private readonly callRepository: ICallRepository,
 
-    @inject(TOKENS.ITripRepository)
-    private readonly tripRepository: ITripRepository,
+    @inject(TOKENS.IGroupMemberRepository)
+    private readonly groupMemberRepository: IGroupMemberRepository,
 
     @inject(TOKENS.ICallNotificationService)
     private readonly notificationService: ICallNotificationService,
@@ -43,7 +43,7 @@ export class JoinGroupCallUseCase implements IJoinGroupCallUseCase {
       throw new Error('Trip group is missing from this call.');
     }
 
-    const membership = await this.tripRepository.findActiveMember(
+    const membership = await this.groupMemberRepository.findActiveMember(
       call.tripGroupId,
       userId,
     );

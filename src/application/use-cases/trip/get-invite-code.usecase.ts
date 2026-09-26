@@ -1,14 +1,15 @@
 import { inject, injectable } from 'tsyringe';
 import { IGetInviteCode } from '../../interfaces/use-cases/trip/get-invite-code.interface';
 import { TOKENS } from '../../../infrastructure/di/tokens';
-import { ITripRepository } from '../../interfaces/repositories/trip.repository';
+import { ITripGroupRepository } from '../../interfaces/repositories/trip-group.repository';
+
 @injectable()
 export class GetInviteCode implements IGetInviteCode {
   constructor(
-    @inject(TOKENS.ITripRepository)
-    private readonly _tripRepository: ITripRepository,
+    @inject(TOKENS.ITripGroupRepository)
+    private readonly _tripGroupRepository: ITripGroupRepository,
   ) {}
   async execute(dto: { groupId: string }): Promise<{ inviteCode: string }> {
-    return await this._tripRepository.getInviteCode(dto.groupId);
+    return await this._tripGroupRepository.getInviteCode(dto.groupId);
   }
 }

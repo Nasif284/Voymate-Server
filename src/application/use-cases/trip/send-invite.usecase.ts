@@ -1,15 +1,15 @@
 import { inject, injectable } from 'tsyringe';
 import { config } from '../../../config/env.config';
 import { TOKENS } from '../../../infrastructure/di/tokens';
-import { ITripRepository } from '../../interfaces/repositories/trip.repository';
+import { ITripGroupRepository } from '../../interfaces/repositories/trip-group.repository';
 import { IEmailService } from '../../interfaces/services/email.service.interface';
 import { ISendInvite } from '../../interfaces/use-cases/trip/send-invite.interface';
 
 @injectable()
 export class SendInvite implements ISendInvite {
   constructor(
-    @inject(TOKENS.ITripRepository)
-    private readonly _tripRepository: ITripRepository,
+    @inject(TOKENS.ITripGroupRepository)
+    private readonly _tripGroupRepository: ITripGroupRepository,
     @inject(TOKENS.IEmailService)
     private readonly _emailService: IEmailService,
   ) {}
@@ -19,7 +19,9 @@ export class SendInvite implements ISendInvite {
     email: string;
     invitedBy: string;
   }): Promise<void> {
-    const invite = await this._tripRepository.getGroupWithTrip(dto.groupId);
+    const invite = await this._tripGroupRepository.getGroupWithTrip(
+      dto.groupId,
+    );
     const frontendUrl =
       config.frontend_url?.replace(/\/$/, '') ?? 'http://localhost:3000';
     const inviteLink = `${frontendUrl}/trips/groups/join/${invite.inviteCode}`;
@@ -42,7 +44,7 @@ export class SendInvite implements ISendInvite {
         </div>
       `,
     });
-    await this._tripRepository.createGroupInvite({
+    await this._tripGroupRepository.createGroupInvite({
       groupId: dto.groupId,
       invitedBy: dto.invitedBy,
       invitedUserEmail: dto.email,

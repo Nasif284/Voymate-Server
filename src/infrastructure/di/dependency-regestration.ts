@@ -25,6 +25,8 @@ import { registerLocationDependency } from './client-side/user/location.dependen
 import { GoogleGeocodingService } from '../services/geocode.service';
 import { registerUserDependency } from './client-side/user/user.dependency';
 import { TripRepository } from '../database/repositories/trip.repository';
+import { TripGroupRepository } from '../database/repositories/trip-group.repository';
+import { GroupMemberRepository } from '../database/repositories/group-member.repository';
 import { ImageService } from '../services/image.service';
 import { registerTripDependency } from './client-side/trip/trip.dependency';
 import { registerConnectionDependency } from './client-side/user/connection.dependency';
@@ -188,6 +190,14 @@ export function registerDependencies(
   container.registerSingleton<TripRepository>(
     TOKENS.ITripRepository,
     TripRepository,
+  );
+  container.registerSingleton<TripGroupRepository>(
+    TOKENS.ITripGroupRepository,
+    TripGroupRepository,
+  );
+  container.registerSingleton<GroupMemberRepository>(
+    TOKENS.IGroupMemberRepository,
+    GroupMemberRepository,
   );
   container.registerSingleton<ChecklistRepository>(
     TOKENS.IChecklistRepository,

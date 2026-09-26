@@ -3,18 +3,19 @@ import { IGenerateAiItineraryUseCase } from '../../interfaces/use-cases/itenary/
 import { TOKENS } from '../../../infrastructure/di/tokens';
 import {
   GroupTripForAI,
-  ITripRepository,
-} from '../../interfaces/repositories/trip.repository';
+  ITripGroupRepository,
+} from '../../interfaces/repositories/trip-group.repository';
 import { IAiItineraryService } from '../../interfaces/services/ai-itinerary.service.interface';
 import { GenerateAiItineraryRequestDTO } from '../../dtos/itenary/request/generate-ai-itinerary.dto';
 
 import { TripPlanningContext } from '../../dtos/itenary/request/ai-itinery-trip-context.dto';
 import { GeneratedItinerary } from '../../dtos/itenary/response/ai-itinerary-result.dto';
+
 @injectable()
 export class GenerateAiItineraryUseCase implements IGenerateAiItineraryUseCase {
   constructor(
-    @inject(TOKENS.ITripRepository)
-    private readonly tripRepository: ITripRepository,
+    @inject(TOKENS.ITripGroupRepository)
+    private readonly tripGroupRepository: ITripGroupRepository,
 
     @inject(TOKENS.IAiItineraryService)
     private readonly aiItineraryService: IAiItineraryService,
@@ -22,7 +23,7 @@ export class GenerateAiItineraryUseCase implements IGenerateAiItineraryUseCase {
   async execute(
     request: GenerateAiItineraryRequestDTO,
   ): Promise<GeneratedItinerary> {
-    const trip = await this.tripRepository.getGroupTrip(request.groupId);
+    const trip = await this.tripGroupRepository.getGroupTrip(request.groupId);
 
     if (!trip) {
       throw new Error('Trip not found.');

@@ -5,7 +5,7 @@ import { TOKENS } from '../../../infrastructure/di/tokens';
 import { ICreateGroupCallUseCase } from '../../interfaces/use-cases/calls/create-group-call.interface';
 import { ICallRepository } from '../../interfaces/repositories/call.repository.interface';
 import { CreateGroupCallDTO } from '../../dtos/call/request/create-group-call.dto';
-import { ITripRepository } from '../../interfaces/repositories/trip.repository';
+import { IGroupMemberRepository } from '../../interfaces/repositories/group-member.repository';
 import { CallDTO, CallMediaType } from '../../dtos/call/request/call.dto';
 import { ICallNotificationService } from '../../interfaces/services/call-notification.service.interface';
 
@@ -15,15 +15,15 @@ export class CreateGroupCallUseCase implements ICreateGroupCallUseCase {
     @inject(TOKENS.ICallRepository)
     private readonly _callRepository: ICallRepository,
 
-    @inject(TOKENS.ITripRepository)
-    private readonly _tripRepository: ITripRepository,
+    @inject(TOKENS.IGroupMemberRepository)
+    private readonly _groupMemberRepository: IGroupMemberRepository,
 
     @inject(TOKENS.ICallNotificationService)
     private readonly _notificationService: ICallNotificationService,
   ) {}
 
   async execute(callerId: string, data: CreateGroupCallDTO): Promise<CallDTO> {
-    const callerMembership = await this._tripRepository.findActiveMember(
+    const callerMembership = await this._groupMemberRepository.findActiveMember(
       data.tripGroupId,
       callerId,
     );
@@ -32,7 +32,7 @@ export class CreateGroupCallUseCase implements ICreateGroupCallUseCase {
       throw new Error('You are not an active member of this trip group.');
     }
 
-    const { members, group } = await this._tripRepository.getMembers(
+    const { members, group } = await this._groupMemberRepository.getMembers(
       data.tripGroupId,
     );
 

@@ -1,143 +1,111 @@
-<div align="center">
+# Voymate Server
 
-# 🌐 Voymate Core Engine (`Server`)
-
-### High-Performance, Distributed Backend for Real-Time Solo Traveler Discovery, AI Travel Assistance & Verified Community Expeditions
+### Modular Backend for Solo Traveler Matchmaking, Real-Time Communication & Community Trips
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-22.x-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-5.x-000000?logo=express&logoColor=white)](https://expressjs.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-PostGIS%20%7C%20pgvector-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
-[![Redis](https://img.shields.io/badge/Redis-Cache%20%7C%20PubSub%20%7C%20BullMQ-DC382D?logo=redis&logoColor=white)](https://redis.io/)
-[![Docker](https://img.shields.io/badge/Docker-Multi--Stage%20Builds-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-[![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI%2FCD%20Pipeline-2088FF?logo=github-actions&logoColor=white)](https://github.com/features/actions)
-[![Doppler](https://img.shields.io/badge/Doppler-Secret%20Ops-D33833?logo=doppler&logoColor=white)](https://www.doppler.com/)
-[![AWS](https://img.shields.io/badge/AWS-ECR%20%7C%20EC2%20%7C%20SSM%20%7C%20S3-FF9900?logo=amazon-aws&logoColor=white)](https://aws.amazon.com/)
-[![Socket.io](https://img.shields.io/badge/Socket.io-WebRTC%20Signaling-010101?logo=socket.io&logoColor=white)](https://socket.io/)
-[![Prometheus](https://img.shields.io/badge/Prometheus-Telemetry%20%26%20Metrics-E6522C?logo=prometheus&logoColor=white)](https://prometheus.io/)
-
-<p align="center">
-  <b>Built with Clean Architecture, Domain-Driven Design (DDD), PostGIS Geospatial Indexing, Local HuggingFace In-Process Vector Embeddings, LangGraph Stateful Agentic Graphs, BullMQ Distributed Queues, Doppler Secret Ops, Multi-Stage Docker, and Zero-SSH AWS SSM CI/CD.</b>
-</p>
+[![Redis](https://img.shields.io/badge/Redis-Cache%20%26%20BullMQ-DC382D?logo=redis&logoColor=white)](https://redis.io/)
+[![Docker](https://img.shields.io/badge/Docker-Multi--Stage-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI%2FCD-2088FF?logo=github-actions&logoColor=white)](https://github.com/features/actions)
+[![Doppler](https://img.shields.io/badge/Doppler-Secrets-D33833?logo=doppler&logoColor=white)](https://www.doppler.com/)
+[![AWS](https://img.shields.io/badge/AWS-EC2%20%7C%20ECR%20%7C%20RDS%20%7C%20S3%20%7C%20SSM-FF9900?logo=amazon-aws&logoColor=white)](https://aws.amazon.com/)
 
 ---
 
-</div>
+## Overview
 
-## 📌 Executive Architectural Summary
+**Voymate Server** is the backend API and real-time server for Voymate, a platform where solo travelers can match with compatible trip companions based on overlapping travel plans, find nearby travelers on a map, chat and video call in real time, and book verified community trips.
 
-The **Voymate Core Server** is an enterprise-grade backend engineered to solve the complex distributed systems and real-time synchronization challenges of a modern social travel ecosystem.
+The backend is structured as a **Modular Monolith** following **Clean Architecture** and **Domain-Driven Design (DDD)** principles, using **TSyringe** for dependency injection so business logic in use cases stays decoupled from Express controllers, Prisma repositories, and third-party SDKs.
 
-Rather than relying on monolithic, ad-hoc MVC patterns, this system is architected around **Domain-Driven Design (DDD)** and **Clean / Hexagonal Architecture (Ports and Adapters)** using strict dependency inversion, typed dependency injection via `TSyringe`, and immutable domain boundaries.
+### What Was Built
 
-### Key Engineering Highlights:
-
-- **Zero Business Logic Leaks**: Domain entities and use cases remain strictly isolated from external libraries, Express HTTP abstractions, and Prisma database models.
-- **Geospatial Proximity Matchmaking**: Custom PostGIS spatial queries (`geography(Point, 4326)`) using `ST_DWithin` and `ST_Distance` with spatial indexing to discover active solo travelers on the road within sub-kilometer precision.
-- **Edge AI & Vector Semantic Retrieval (RAG)**: In-process vector embedding generation via `@huggingface/transformers` (`all-MiniLM-L6-v2`) on CPU coupled with PostgreSQL `pgvector` cosine distance queries (`<=>`), eliminating external embedding API costs and latency.
-- **Stateful Agentic Workflows**: Multi-node state machine orchestration via `@langchain/langgraph` integrating user profile context, active itineraries, and vector conversation history.
-- **Asynchronous Document AI & Verification Pipeline**: Distributed task processing via BullMQ and Redis to execute OCR extraction with Google Cloud Document AI and rule-based fraud risk scoring without blocking event loops.
-- **Full-Duplex Real-Time Fabric**: WebRTC audio/video signaling state machine and Socket.io chat with multi-socket presence tracking and distributed room authorization.
-- **Doppler Secret Management Architecture**: Zero plaintext secrets stored on disk or committed to source control; runtime secret injection via Doppler CLI across local development and production Docker containers.
-- **Multi-Stage Containerization & Custom Database**: Multi-stage lean Docker production image (`node:22-bookworm-slim`) paired with a custom PostgreSQL container unifying `pgvector/pgvector:0.8.6` and `postgresql-15-postgis-3`.
-- **Enterprise CI/CD & Zero-SSH Automated Deployment**: Fully automated GitHub Actions pipeline validating branch naming, conventional commits, linting, and strict TypeScript compilation, followed by keyless AWS OIDC role assumption, ECR container publishing, and zero-SSH remote execution on EC2 via **AWS Systems Manager (SSM)**.
-- **Production-Grade Telemetry**: Prometheus metrics middleware exporting active request gauges, latency histograms, and error counters to `/metrics`.
+- **Clean Architecture & Dependency Injection**: Divided into `domain`, `application`, `infrastructure`, and `presentation` layers. Controllers depend on use-case interfaces, and use cases depend on repository/service interfaces injected via `TSyringe`.
+- **Geospatial Traveler Discovery (`PostGIS`)**: Uses `geography(Point, 4326)` columns with `ST_DWithin` and `ST_Distance` queries to find active travelers within a configurable kilometer radius, combined with a weighted compatibility scoring engine for trip matching.
+- **RAG Travel Assistant (`LangGraph` + `pgvector` + Local Embeddings)**: Generates 384-dimensional vector embeddings locally on CPU using `@huggingface/transformers` (`Xenova/all-MiniLM-L6-v2`), retrieves relevant past messages from PostgreSQL via `pgvector` cosine distance (`<=>`), and combines them with the user's active trip details inside a `LangGraph` workflow.
+- **Background ID Verification (`BullMQ` + `Google Document AI`)**: Offloads government ID OCR extraction and rule-based risk scoring to a Redis-backed `BullMQ` worker queue so document uploads return immediately without blocking HTTP requests.
+- **Real-Time Chat & WebRTC Signaling (`Socket.io`)**: Handles 1-on-1 messaging, read receipts, multi-tab online presence tracking in Redis, and WebRTC offer/answer/ICE signaling for peer-to-peer audio and video calls.
+- **3-Portal Role-Based Authentication**: Separate authentication flows and JWT session handling for **Travelers**, **Community Organizers**, and **Admins** (`SUPER_ADMIN`, `MODERATOR`, `ANALYST`), with hashed refresh token storage and rotation in Redis.
+- **Community Trip Booking & Payments (`Razorpay`)**: Supports both free and paid community trips with capacity checks, Razorpay order creation, HMAC-SHA256 payment signature verification, and booking pass generation.
+- **Automated AWS Deployment (`Docker`, `Doppler`, `GitHub Actions`, `AWS SSM`)**: Multi-stage Docker build pushed to Amazon ECR and deployed to EC2 (with AWS RDS and S3) via AWS Systems Manager (SSM) with runtime secret injection from Doppler.
 
 ---
 
-## 🏛️ System Architecture & Layer Boundaries
+## System Architecture
 
-The codebase enforces strict unidirectional dependency flow from presentation to domain:
+Dependencies point inward toward the domain and application layers:
 
 ```
 [Presentation Layer]  -->  [Application Layer]  -->  [Domain Layer]
-  (Controllers, Routes,      (Use Cases, DTOs,         (Entities, Value Objects,
-   Socket Handlers, Zod)      Ports / Interfaces)       Domain Errors, Enums)
-         |                           ^                          ^
-         |                           |                          |
-         +------------------- [Infrastructure Layer] -----------+
-                              (Prisma Repositories, Redis Cache,
-                               BullMQ Queues, AWS S3, LangGraph)
+  (Controllers, Routes,      (Use Cases, DTOs,         (Entities, Enums,
+   Socket Handlers, Zod)      Repository/Service        Domain Errors,
+                              Interfaces)               Matching Service)
+         |                           ^
+         |                           |
+         +------------------- [Infrastructure Layer]
+                              (Prisma Repositories, Redis,
+                               BullMQ, S3, LangGraph, Razorpay)
 ```
 
 ```mermaid
 graph TD
-    subgraph Presentation_Layer ["Presentation Layer (Ports & Transport)"]
-        HTTP["Express 5 REST API"]
-        SOCK["Socket.io Signaling & Chat"]
-        VAL["Zod Request Validation"]
-        ERR["Centralized Global Error Mapper"]
-        METRIC["Prometheus Metrics Middleware"]
+    subgraph Presentation ["Presentation Layer"]
+        HTTP["Express 5 Controllers & Routes"]
+        SOCK["Socket.io Chat & Call Handlers"]
+        VAL["Zod Request Validators"]
+        MW["Auth, Error & Metrics Middleware"]
     end
 
-    subgraph Application_Layer ["Application Layer (Use Cases & Orchestration)"]
-        UC_AUTH["Auth & Session Use Cases"]
-        UC_GEO["Geospatial Matchmaking Use Cases"]
-        UC_AI["LangGraph Travel Agent Use Cases"]
-        UC_VERIF["Async Verification Use Cases"]
-        UC_COMM["Community Trip Booking Use Cases"]
-        PORTS["Service & Repository Interface Contracts"]
+    subgraph Application ["Application Layer"]
+        UC["Use Cases (Auth, Trips, Matches, Chat, Community, AI)"]
+        INTERFACES["Repository & Service Interfaces"]
     end
 
-    subgraph Domain_Layer ["Domain Layer (Core Business Rules)"]
-        ENT_USER["User & Profile Aggregates"]
-        ENT_TRIP["Trip & Community Aggregates"]
-        VAL_OBJ["Domain Enums & Value Objects"]
-        DOM_ERR["Domain Business Errors"]
+    subgraph Domain ["Domain Layer"]
+        ENT["Domain Entities & Models"]
+        MATCH["Matching Engine Service"]
+        ERR["Custom Domain Errors"]
     end
 
-    subgraph Infrastructure_Layer ["Infrastructure Layer (Adapters & External Systems)"]
-        REPO_PG["Prisma / PostgreSQL Adapter"]
-        VEC_PG["pgvector Cosine Search"]
-        GEO_PG["PostGIS Spatial Engine"]
-        CACHE_REDIS["Redis Caching & Presence Engine"]
-        QUEUE_BULL["BullMQ Asynchronous Job Queues"]
-        AI_HF["HuggingFace Local Embeddings"]
-        AI_DOC["Google Cloud Document AI"]
-        S3_STORAGE["AWS S3 Presigned Storage Adapter"]
-        PAY_GATEWAY["Razorpay Cryptographic Verification"]
+    subgraph Infrastructure ["Infrastructure Layer"]
+        PRISMA["Prisma Repositories (PostgreSQL)"]
+        POSTGIS["PostGIS Spatial Queries"]
+        PGVEC["pgvector Similarity Queries"]
+        REDIS["Redis (Sessions & Presence)"]
+        BULL["BullMQ Verification Queue & Worker"]
+        AI["HuggingFace Embeddings + LangGraph"]
+        EXT["AWS S3, Google Document AI, Razorpay, Twilio"]
     end
 
     HTTP --> VAL
-    VAL --> UC_AUTH
-    VAL --> UC_GEO
-    VAL --> UC_COMM
-    SOCK --> UC_AI
-    HTTP --> METRIC
+    VAL --> UC
+    SOCK --> UC
+    HTTP --> MW
 
-    UC_AUTH --> PORTS
-    UC_GEO --> PORTS
-    UC_AI --> PORTS
-    UC_VERIF --> PORTS
-    UC_COMM --> PORTS
+    UC --> INTERFACES
+    UC --> MATCH
+    INTERFACES --> ENT
+    INTERFACES --> ERR
 
-    PORTS --> ENT_USER
-    PORTS --> ENT_TRIP
-    PORTS --> DOM_ERR
-
-    REPO_PG -.->|Implements| PORTS
-    GEO_PG -.->|Implements| PORTS
-    VEC_PG -.->|Implements| PORTS
-    CACHE_REDIS -.->|Implements| PORTS
-    QUEUE_BULL -.->|Implements| PORTS
-    AI_HF -.->|Implements| PORTS
-    AI_DOC -.->|Implements| PORTS
-    S3_STORAGE -.->|Implements| PORTS
-    PAY_GATEWAY -.->|Implements| PORTS
+    PRISMA -.->|Implements| INTERFACES
+    POSTGIS -.->|Implements| INTERFACES
+    PGVEC -.->|Implements| INTERFACES
+    REDIS -.->|Implements| INTERFACES
+    BULL -.->|Implements| INTERFACES
+    AI -.->|Implements| INTERFACES
+    EXT -.->|Implements| INTERFACES
 ```
 
 ---
 
-## ⚡ Core Engineering Subsystems
+## Key Features & Implementation Details
 
-### 1. Geospatial Traveler Discovery Engine (PostGIS)
+### 1. Proximity Search & Trip Compatibility Engine (`PostGIS`)
 
-Finding fellow solo travelers within an adjustable radius requires sub-second execution on high-density coordinate tables without table scans.
-
-- **Spatial Modeling**: Columns utilize `geography(Point, 4326)` for ellipsoidal calculations on Earth's curved surface.
-- **Index Optimization**: Built with spatial GiST indexes over coordinates.
-- **Raw Query Execution**:
+- **Nearby Traveler Search**: Stores user coordinates as `geography(Point, 4326)` in PostgreSQL and uses `ST_DWithin` and `ST_Distance` to query active travelers within a given radius:
   ```sql
   SELECT u.id, u.full_name, l.current_city,
          ST_Distance(l.coordinates, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography) / 1000 AS distance_km
@@ -148,438 +116,234 @@ Finding fellow solo travelers within an adjustable radius requires sub-second ex
     AND ST_DWithin(l.coordinates, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, $4)
   ORDER BY distance_km ASC;
   ```
+- **Trip Match Scoring**: The domain `MatchingEngineService` computes compatibility scores between travelers' upcoming trips based on destination match, overlapping travel dates, budget compatibility, travel style, interests, and age/gender preferences.
 
 ---
 
-### 2. Hybrid RAG & Stateful AI Travel Agent (LangGraph + pgvector)
+### 2. AI Travel Assistant with RAG (`LangGraph` + `pgvector`)
 
-Rather than passing an entire unbounded chat transcript to an LLM, the AI subsystem combines semantic vector retrieval with localized memory and itinerary metadata:
+Instead of sending the entire chat history on every prompt, the assistant builds a focused context before calling the LLM:
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Traveler as Client App
+    actor User as Traveler
     participant Controller as AiAssistantController
-    participant ContextBuilder as AssistantContextBuilder
-    participant HF as HuggingFace Local Model
-    participant pgvector as PostgreSQL (pgvector)
-    participant LangGraph as LangGraph Agent Graph
-    participant LLM as OpenRouter / Gemini
+    participant Builder as AssistantContextBuilder
+    participant HF as HuggingFace (MiniLM-L6-v2)
+    participant DB as PostgreSQL (pgvector)
+    participant Graph as LangGraph (AssistantState)
+    participant LLM as OpenRouter LLM
 
-    Traveler->>Controller: POST /api/v1/ai-assistant/chat { message }
-    Controller->>ContextBuilder: build(userId, message)
-
-    par In-Process Embedding & History
-        ContextBuilder->>HF: embed(message) [MiniLM-L6-v2 CPU]
-        HF-->>ContextBuilder: 384-dimensional vector
-        ContextBuilder->>ContextBuilder: Fetch recent 10 messages (buffer)
-    end
-
-    ContextBuilder->>pgvector: SELECT <=> cosine distance similarity (top 5)
-    pgvector-->>ContextBuilder: Semantic contextual past messages
-    ContextBuilder->>ContextBuilder: Inject active itinerary & budget preferences
-    ContextBuilder-->>Controller: Fully hydrated AssistantContext
-
-    Controller->>LangGraph: execute(AssistantState)
-    LangGraph->>LLM: Stream prompt with context & grounding
-    LLM-->>LangGraph: Generated domain response
-    LangGraph-->>Controller: State updated with reply
-
-    par Async Vector Storage
-        Controller->>HF: embed(reply)
-        HF-->>Controller: vector
-        Controller->>pgvector: INSERT raw vector into assistant_message_embeddings
-    end
-
-    Controller-->>Traveler: 200 OK { response, contextId }
+    User->>Controller: POST /api/v1/ai-assistant/chat { message }
+    Controller->>Builder: build(userId, message)
+    Builder->>DB: Fetch last 10 messages in conversation
+    Builder->>HF: Generate 384-dim embedding for message
+    HF-->>Builder: Vector embedding
+    Builder->>DB: Search top 5 similar messages (<=> cosine distance)
+    Builder->>DB: Fetch user profile & active trip details
+    Builder-->>Controller: AssistantContext
+    Controller->>Graph: Invoke StateGraph with context
+    Graph->>LLM: Generate response with grounded prompt
+    LLM-->>Graph: Assistant reply
+    Graph-->>Controller: Final response
+    Controller->>HF: Embed user message & assistant reply
+    Controller->>DB: Save messages & embeddings
+    Controller-->>User: 200 OK { reply }
 ```
 
-- **Local Feature Extraction**: Utilizes `@huggingface/transformers` to run `Xenova/all-MiniLM-L6-v2` locally inside Node.js, yielding 384-dimensional normalized embeddings with zero external HTTP latency.
-- **Vector Indexing**: Native SQL queries using `<=>` (cosine distance operator) partitioned by `conversation_id`.
-- **Stateful Graph**: Defined via `StateGraph(AssistantState)` with dedicated prompt formatting, contextual injection, and validation nodes.
+- **Local CPU Embeddings**: Uses `@huggingface/transformers` (`Xenova/all-MiniLM-L6-v2`) inside the Node.js process to generate 384-dimensional embeddings without paying for external embedding APIs.
+- **Vector Search**: Queries `assistant_message_embeddings` using `pgvector`'s cosine distance operator (`<=>`) scoped to the user's `conversation_id`.
 
 ---
 
-### 3. Distributed Document AI & Verification Pipeline (BullMQ + Redis)
+### 3. Asynchronous ID Verification (`BullMQ` + `Google Cloud Document AI`)
 
-Government-issued ID verification (passports, Aadhaar, driving licenses) is CPU- and I/O-intensive. Blocking the HTTP thread during OCR leads to timeout cascades under load.
+Document OCR takes several seconds per upload. To keep the API responsive, verification processing is handled in the background via BullMQ:
 
 ```mermaid
 flowchart TD
-    A["Traveler Submits ID Documents"] -->|POST multipart| B["Verification Controller"]
-    B -->|Upload to S3| C["Private AWS S3 Bucket"]
-    B -->|Record Pending Status| D[("PostgreSQL")]
-    B -->|Enqueue Job| E["BullMQ Verification Queue"]
-    B -- Immediate 202 Accepted --> A
+    A["User Uploads ID Document (Multipart)"] --> B["VerificationController"]
+    B --> C["Upload Buffer to Private AWS S3 Bucket"]
+    B --> D["Create PENDING Verification Record in PostgreSQL"]
+    B --> E["Add Job to BullMQ (verification-processing)"]
+    B --> F["Return 202 Response to User"]
 
-    subgraph Asynchronous_Worker ["Background Worker (Isolated Process)"]
-        E -->|Consume Job| F["Verification Worker"]
-        F -->|Fetch Document Buffers| C
-        F -->|Send to OCR| G["Google Cloud Document AI"]
-        G -->|Structured Entities| H["Document Extraction Service"]
-        H -->|Extracted Fields| I["Rule-Based Fraud Risk Engine"]
-        I -->|Calculate Risk Score 0-100| J{"Risk Assessment"}
-        J -->|Passed Checks| K["Mark Pending Admin Review / Auto-Approve"]
-        J -->|Critical Field Missing / Mismatch| L["Flag High Risk Warning"]
-        K --> M[("Update PostgreSQL Verification Record")]
-        L --> M
+    subgraph Worker ["BullMQ Verification Worker"]
+        E --> G["VerificationWorker Picks Up Job"]
+        G --> H["Download Document Buffer from S3"]
+        H --> I["Send to Google Cloud Document AI (OCR)"]
+        I --> J["Parse Extracted Text & Document Fields"]
+        J --> K["Calculate Fraud/Mismatch Risk Score"]
+        K --> L["Save Extracted Data & Risk Score to PostgreSQL"]
     end
 ```
 
-- **BullMQ Queue Management**: Configured with automatic retries, exponential backoff, and dead-letter queue (DLQ) support.
-- **Fraud Risk Engine**: Evaluates full name fuzzy matching, document validity dates, required side codes (front/back), and applies calibrated penalties against the 100-point trust score.
+- **Queue Configuration**: Configured in `verification.queue.ts` with 3 retry attempts and 5-second exponential backoff.
+- **Private S3 Storage**: Uploaded ID documents are stored in a private S3 bucket. When an admin reviews a verification request in the dashboard, the backend generates a temporary presigned `GET` URL (`expiresIn: 3600` seconds) via `@aws-sdk/s3-request-presigner`.
 
 ---
 
-### 4. Real-Time WebRTC Video & Audio Signaling Fabric
-
-P2P WebRTC calls require a fault-tolerant signaling backplane to exchange Session Description Protocol (SDP) offers, answers, and ICE candidates.
+### 4. Real-Time Chat & WebRTC Call Signaling (`Socket.io`)
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Alice as Caller (Client A)
+    participant Caller as Caller (Browser A)
     participant Socket as Socket.io Server
-    participant Redis as Redis Session & Presence
-    participant Bob as Callee (Client B)
+    participant Redis as Redis Presence Store
+    participant Callee as Callee (Browser B)
 
-    Alice->>Socket: call:initiate { targetUserId, callType }
-    Socket->>Redis: Check target user presence
-    alt Bob is Offline / Busy
-        Socket-->>Alice: call:unavailable { reason: 'OFFLINE' | 'BUSY' }
-    else Bob is Available
-        Socket->>Socket: Generate Call Session ID
-        Socket->>Bob: call:incoming { callId, callerInfo }
-        Bob->>Socket: call:accept { callId }
-        Socket-->>Alice: call:accepted { callId }
-
-        par WebRTC SDP Handshake
-            Alice->>Socket: call:offer { callId, sdpOffer }
-            Socket->>Socket: Authorize signaling room access
-            Socket->>Bob: call:offer { callId, sdpOffer }
-            Bob->>Socket: call:answer { callId, sdpAnswer }
-            Socket->>Alice: call:answer { callId, sdpAnswer }
-        end
-
-        par ICE Candidate Trickle
-            Alice->>Socket: call:ice-candidate { candidate }
-            Socket->>Bob: call:ice-candidate { candidate }
-            Bob->>Socket: call:ice-candidate { candidate }
-            Socket->>Alice: call:ice-candidate { candidate }
-        end
-
-        Note over Alice,Bob: Direct P2P Media Streams Established (SRTP)
+    Caller->>Socket: call:initiate { targetUserId, mediaType }
+    Socket->>Redis: Check if targetUserId is online
+    alt Offline
+        Socket-->>Caller: call:unavailable
+    else Online
+        Socket->>Callee: call:incoming { callId, caller }
+        Callee->>Socket: call:accept { callId }
+        Socket-->>Caller: call:accepted { callId }
+        Caller->>Socket: call:offer { callId, offer }
+        Socket->>Callee: call:offer { callId, offer }
+        Callee->>Socket: call:answer { callId, answer }
+        Socket->>Caller: call:answer { callId, answer }
+        Caller->>Socket: call:ice-candidate { candidate }
+        Socket->>Callee: call:ice-candidate { candidate }
+        Note over Caller,Callee: Direct P2P WebRTC Media Stream Connected
     end
 ```
 
-- **Distributed Presence**: Multi-socket mapping in Redis allows users to connect from multiple tabs/devices without false "offline" states (`isFirstSocket` detection).
-- **Signaling Security**: `IAuthorizeSignalingUseCase` verifies both participants belong to an active, authorized call before relaying SDP payloads.
+- **Multi-Tab Presence in Redis**: Tracks active socket IDs per user in Redis sets so opening multiple browser tabs doesn't mark a user offline when closing a single tab.
+- **Call Authorization**: Validates that both users belong to the active call record before relaying WebRTC SDP offers, answers, and ICE candidates.
 
 ---
 
-### 5. Community Expedition Booking & Payment Concurrency Engine
+### 5. Community Trips & Razorpay Checkout
 
-Paid community adventures experience sudden booking spikes when slots are released.
-
-- **Race Condition Prevention**: Prevents overbooking beyond `maxCapacity` through strict pre-condition checks, database constraint guards, and atomic joined count increments.
-- **Razorpay Integration**: Two-phase checkout flow:
-  1. `create-razorpay-order.usecase`: Generates an official payment order with amounts locked in paise.
-  2. `verify-razorpay-booking.usecase`: Cryptographically validates the HMAC-SHA256 signature using `crypto.createHmac('sha256', secret).update(orderId + "|" + paymentId)`.
-- **Digital Pass Generation**: Generates deterministic alphanumeric booking codes (`VM-<SLUG>-<RANDOM>`) for check-in verification.
+- **Organizer Portal**: Verified community organizers can publish free or paid group trips with itineraries, inclusions/exclusions, capacity limits, and cover galleries.
+- **Payment Verification**:
+  1. `CreateRazorpayOrderUseCase` creates an order via the Razorpay SDK.
+  2. `VerifyRazorpayBookingUseCase` verifies the `razorpay_signature` using `crypto.createHmac('sha256', keySecret)` before confirming the booking and incrementing the trip's participant count.
 
 ---
 
-## 🚢 DevOps, CI/CD, Containerization & Secret Management
-
-A key engineering differentiator of Voymate is its production deployment automation, secrets governance, and container orchestration:
+## CI/CD, Docker & AWS Deployment
 
 ```mermaid
 flowchart LR
-    subgraph Development ["Local Workstation"]
-        DEV["Developer Commit"] --> GIT_HOOKS["Husky & Lint-Staged"]
-        GIT_HOOKS --> GIT_PUSH["git push origin main"]
+    subgraph Local ["Developer Machine"]
+        PUSH["git push origin main"]
     end
 
-    subgraph GitHub_Actions ["GitHub Actions CI/CD Pipeline"]
-        GIT_PUSH --> CI_VAL["Branch Name & Commit Linter"]
-        CI_VAL --> CI_BUILD["Node 22, Prisma Gen, ESLint, tsc --noEmit"]
-        CI_BUILD --> OIDC["AWS IAM OIDC Role Assume"]
-        OIDC --> ECR_PUSH["Build Dockerfile.prod & Push to Amazon ECR"]
-        ECR_PUSH --> SSM_DISPATCH["AWS SSM Send-Command to EC2"]
+    subgraph GitHub ["GitHub Actions (.github/workflows/ci.yml)"]
+        CHECK["Lint, Prettier, Prisma Generate & tsc Build"]
+        DOCKER_BUILD["Build Dockerfile.prod & Push to AWS ECR"]
+        SSM["Trigger AWS SSM RunShellScript"]
+        PUSH --> CHECK --> DOCKER_BUILD --> SSM
     end
 
-    subgraph Production_EC2 ["Amazon EC2 Production Host"]
-        SSM_DISPATCH --> EXEC_DEPLOY["Execute deploy.sh via SSM"]
-        EXEC_DEPLOY --> ECR_PULL["Pull Latest Docker Image from ECR"]
-        EXEC_DEPLOY --> DOCKER_COMPOSE["docker compose up -d"]
-        DOPPLER_VAULT[("Doppler Secret Vault")] -.->|doppler run runtime injection| DOCKER_CONTAINER["Voymate API Container"]
-        DOCKER_COMPOSE --> DOCKER_CONTAINER
+    subgraph AWS ["AWS Cloud (ap-southeast-2)"]
+        EC2["EC2 Instance (Ubuntu + Nginx + Docker)"]
+        RDS[("AWS RDS PostgreSQL (PostGIS + pgvector)")]
+        DOPPLER["Doppler CLI Runtime Secrets"]
+        SSM --> EC2
+        DOPPLER -.->|Injects Env Vars| EC2
+        EC2 --> RDS
     end
 ```
 
-### 1. Enterprise CI/CD Pipeline (`.github/workflows/ci.yml`)
-
-The server employs a fully automated, three-stage continuous integration and delivery pipeline:
-
-1. **Quality Gates & Governance (`build-and-check`)**:
-   - **Branch Name Enforcement**: Pull requests are strictly validated against semantic patterns (`^(feature|bugfix|hotfix|chore|release)\/[A-Z]+-[0-9]+-[a-z0-9-]+$`).
-   - **Conventional Commit Linter**: Every commit in the PR branch is validated against conventional commit standards (`feat:`, `fix:`, `refactor:`, `chore:`, etc.).
-   - **Automated Verification**: Automatically runs `npm ci`, `npx prisma generate`, `npm run format:check`, `npm run lint`, `npx tsc --noEmit`, and `npm run build`.
-2. **Container Build & Registry Publishing (`build-and-push`)**:
-   - Uses keyless **AWS IAM OIDC Federation** (`aws-actions/configure-aws-credentials`) to eliminate static long-lived AWS secret access keys in GitHub Secrets.
-   - Builds the production container using `Dockerfile.prod` and pushes both immutable SHA tags (`${{ github.sha }}`) and `latest` to **Amazon Elastic Container Registry (ECR)**.
-3. **Zero-SSH Automated Deployment (`deploy`)**:
-   - Rather than exposing SSH port 22 to the public internet, deployment is orchestrated via **AWS Systems Manager (SSM)**.
-   - Dispatches `AWS-RunShellScript` invoking `/home/ubuntu/deploy.sh`, polls execution status, streams STDOUT/STDERR logs back to the GitHub Actions console, and verifies deployment health.
+1. **CI Checks (`build-and-check`)**:
+   - Validates branch names and Conventional Commit messages on pull requests.
+   - Runs `npm ci`, `npx prisma generate`, `npm run format:check`, `npm run lint`, `npx tsc --noEmit`, and `npm run build`.
+2. **Docker Build & ECR Push (`build-and-push`)**:
+   - Authenticates with AWS using IAM credentials stored in GitHub Secrets.
+   - Builds the multi-stage production image (`Dockerfile.prod`) and pushes `:latest` and `:${{ github.sha }}` tags to **Amazon ECR**.
+3. **Zero-SSH Deployment via AWS SSM (`deploy`)**:
+   - Uses `aws ssm send-command` to execute `/home/ubuntu/deploy.sh` on the EC2 instance without needing SSH port 22 open to GitHub runners.
+   - The deploy script stops old containers, prunes unused Docker images, pulls the new image from ECR, runs `npx prisma migrate deploy` against **AWS RDS**, and starts the containers with **Doppler** injecting production environment variables (`CMD ["doppler", "run", "--", "npm", "start"]`).
 
 ---
 
-### 2. Doppler Secret Management Architecture
-
-Storing credentials in plaintext `.env` files is a major security vulnerability in production environments. Voymate implements **Doppler Secret Ops**:
-
-- **Centralized Vault**: All database credentials, JWT secrets, third-party API keys (Razorpay, Twilio, Google Document AI, AWS S3) are stored in Doppler's encrypted secret vault.
-- **Process Injection**: The production image installs the Doppler CLI during multi-stage build. The container boots via:
-  ```dockerfile
-  CMD ["doppler", "run", "--", "npm", "start"]
-  ```
-- **Zero Plaintext Secrets**: Secrets are injected directly into process memory (`process.env`) at container launch, leaving zero plaintext configuration artifacts on disk.
-- **Environment Parity**: Developers use `doppler run -- npm run dev` locally, ensuring local environments are synchronized with production secrets without manual file sharing.
-
----
-
-### 3. Containerization (Docker & Docker Compose)
-
-The backend is fully containerized for both local development and production isolation:
-
-- **Multi-Stage Production Build (`Dockerfile.prod`)**:
-  - **Stage 1 (Builder)**: `node:22-bookworm-slim` installs dev dependencies, Doppler CLI, compiles TypeScript, and generates Prisma client models.
-  - **Stage 2 (Production)**: Clean `node:22-bookworm-slim` base copying only compiled JS (`dist/`), production dependencies (`npm ci --omit=dev`), Prisma schemas/migrations, and the Doppler CLI. Yields a lightweight, hardened container image.
-- **Custom Geospatial + Vector Database (`postgres/Dockerfile`)**:
-  - Builds from `pgvector/pgvector:0.8.6-pg15-bookworm`.
-  - Installs `postgresql-15-postgis-3` and `postgresql-15-postgis-3-scripts`.
-  - Automatically initializes both `postgis` and `vector` extensions via initialization hooks, providing a single consolidated datastore for relational, geospatial, and semantic vector operations.
-- **Docker Compose Topology**:
-  - `docker-compose.yml`: Local orchestrator wiring the API (with Chrome DevTools debugging on port `9229`), PostgreSQL (PostGIS + pgvector), and Redis with healthcheck dependencies (`pg_isready`).
-  - `docker-compose.prod.yml`: Production orchestrator pulling immutable ECR images and injecting `DOPPLER_TOKEN`.
-
----
-
-## 📂 Project Directory Structure
+## Project Structure
 
 ```
 Server/
-├── .github/                       # GitHub Actions CI/CD Workflows
-│   └── workflows/
-│       └── ci.yml                 # Automated Quality Gates, ECR Push & SSM Deploy
-│
-├── postgres/                      # Custom PostgreSQL Docker Image
-│   ├── Dockerfile                 # Unified pgvector + PostGIS 3 Image Definition
-│   └── init-extensions.sql        # Automated CREATE EXTENSION Initializer
-│
+├── .github/workflows/
+│   └── ci.yml                     # GitHub Actions CI/CD pipeline
+├── postgres/
+│   ├── Dockerfile                 # Local PostgreSQL image with PostGIS + pgvector
+│   └── init-extensions.sql        # Enables uuid-ossp, postgis, and vector extensions
 ├── src/
-│   ├── application/               # Application Layer (Use Cases & Orchestration)
-│   │   ├── dtos/                  # Request / Response Data Transfer Objects
-│   │   ├── interfaces/            # Dependency Inversion Ports (Contracts)
-│   │   │   ├── repositories/      # Repository Interfaces
-│   │   │   ├── services/          # External Service Interfaces
-│   │   │   └── use-cases/         # Use Case Interfaces
-│   │   └── use-cases/             # Application Use Case Implementations
-│   │
-│   ├── config/                    # Environment & Process Configuration
-│   │   └── env.config.ts          # Validated Environment Config
-│   │
-│   ├── domain/                    # Domain Layer (Pure Enterprise Rules)
-│   │   ├── entities/              # Domain Aggregates & Models
-│   │   ├── enums/                 # Domain Enums (Status, Types, Roles)
-│   │   └── errors/                # Typed Domain Business Exceptions
-│   │
-│   ├── infrastructure/            # Infrastructure Layer (Secondary Adapters)
-│   │   ├── ai/                    # LangGraph State Machine & AI Builders
-│   │   ├── database/              # Persistence Engine
-│   │   │   ├── repositories/      # Concrete Prisma Repositories
-│   │   │   └── schema/models/     # Modular Multi-File Prisma Schemas
-│   │   ├── di/                    # Dependency Injection (TSyringe Container & Tokens)
-│   │   ├── jobs/                  # BullMQ Queues, Processors & Background Workers
-│   │   ├── logging/               # Winston Daily Rotate Logger & Prometheus Metrics
-│   │   ├── services/              # Concrete Third-Party Adapters (S3, Redis, Twilio, Razorpay)
-│   │   └── socket/                # Socket.io Transport & WebRTC Signaling Handlers
-│   │
-│   ├── presentation/              # Presentation Layer (Primary Adapters)
-│   │   ├── controllers/           # Express REST Controllers
-│   │   ├── express/               # Express Application Bootstrap
-│   │   ├── middleware/            # Auth, Error, Rate Limiting, Metrics Middlewares
-│   │   ├── routes/                # Versioned Route Definitions (/api/v1)
-│   │   └── validators/            # Zod Input Validation Schemas
-│   │
-│   ├── shared/                    # Cross-cutting Utilities, Constants & Error Codes
-│   └── server.ts                  # Server Entry Point & Lifecycle Supervisor
-│
-├── Dockerfile                     # Development Container Definition
-├── Dockerfile.prod                # Multi-Stage Production Container with Doppler
-├── docker-compose.yml             # Local Development Orchestration (API + PG + Redis)
-├── docker-compose.prod.yml        # Production Orchestration on EC2
-├── package.json                   # Dependencies, Scripts & Tooling
-├── tsconfig.json                  # Strict TypeScript Compiler Options
-└── eslint.config.mjs              # Code Quality & Standards
+│   ├── application/               # Use cases, DTOs, and repository/service interfaces
+│   ├── config/                    # Env, DB, Redis, S3, Razorpay, and Twilio configs
+│   ├── domain/                    # Entities, enums, domain errors, and matching service
+│   ├── infrastructure/            # Prisma repos, BullMQ jobs, LangGraph AI, Socket.io, DI
+│   ├── presentation/              # Express controllers, routes, middlewares, Zod schemas
+│   ├── shared/                    # Response helpers, constants, and utilities
+│   └── server.ts                  # Application entry point
+├── Dockerfile                     # Local development Dockerfile
+├── Dockerfile.prod                # Multi-stage production Dockerfile with Doppler CLI
+├── docker-compose.yml             # Local dev stack (API + Postgres + Redis)
+└── docker-compose.prod.yml        # Production compose file (API + Redis)
 ```
 
 ---
 
-## 🛡️ Multi-Tenant Authentication & Security Architecture
+## Tech Stack
 
-The server implements a multi-tenant authentication system serving three distinct actor domains:
-
-1. **Traveler (User)**: Cookie-based refresh tokens with short-lived access tokens, Google OAuth2.0, multi-channel OTP (Email via Nodemailer, SMS via Twilio).
-2. **Community Organizer**: Dedicated onboarding portal, commercial host verification, KYC identity validation, and host-scoped token claims.
-3. **Administrator**: Role-based access control (RBAC), multi-factor admin sessions, platform governance, and audit logging.
-
-### Security Invariants:
-
-- **Token Rotation & Blacklisting**: Refresh tokens are rotated on every refresh request. Compromised sessions can be revoked immediately via Redis key invalidation.
-- **S3 Pre-Signed Direct Uploads**: Sensitive identity documents and high-resolution trip galleries are uploaded directly from client to AWS S3 using presigned PUT URLs, preventing buffer bloat and memory leaks on the API server.
-- **Private Document Access**: Verification documents in S3 remain in private buckets accessible only via time-bounded presigned GET URLs generated on-demand for authorized admins.
-- **Hardened HTTP Surface**: Protected by `helmet`, strict CORS whitelisting, JSON payload size boundaries, and cookie `SameSite=lax` / `HttpOnly` flags.
-
----
-
-## 📊 Telemetry, Observability & Health
-
-The server incorporates production-ready metrics and logging infrastructure:
-
-| Component              | Technology                              | Description                                                                                                                    |
-| :--------------------- | :-------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------- |
-| **Metrics Scrape**     | `prom-client`                           | Standard `/metrics` endpoint for Prometheus / Grafana scraping                                                                 |
-| **HTTP Metrics**       | Custom Middleware                       | Tracks `http_requests_total`, `http_request_duration_seconds` (p50, p95, p99), `active_requests`                               |
-| **Error Tracking**     | Custom Counter                          | `http_errors_total` categorized by method, route, and status code (4xx / 5xx)                                                  |
-| **Structured Logging** | `winston` + `winston-daily-rotate-file` | JSON-formatted structured logs rotated daily into `/logs`                                                                      |
-| **HTTP Access Log**    | `morgan`                                | Colorized development logging and structured production request trails                                                         |
-| **Process Resilience** | Node.js Process                         | Intercepts `SIGINT` and `SIGTERM` for graceful teardown (closing Prisma pools, flushing Redis buffers, draining BullMQ queues) |
+| Category                 | Technology                                                       | Usage                                                        |
+| :----------------------- | :--------------------------------------------------------------- | :----------------------------------------------------------- |
+| **Runtime & Language**   | Node.js 22, TypeScript 5                                         | Backend runtime and strict static typing                     |
+| **Framework**            | Express 5                                                        | REST API routing and middleware                              |
+| **Dependency Injection** | TSyringe                                                         | IoC container for Clean Architecture decoupling              |
+| **Database & ORM**       | PostgreSQL, Prisma 7                                             | Relational data persistence and migrations                   |
+| **Spatial & Vector**     | PostGIS, `pgvector`                                              | Proximity radius queries and vector similarity search        |
+| **Cache & Queues**       | Redis, BullMQ                                                    | Refresh token sessions, socket presence, and OCR job queue   |
+| **Real-Time**            | Socket.io                                                        | 1-on-1 chat and WebRTC call signaling                        |
+| **AI & Embeddings**      | `@langchain/langgraph`, `@huggingface/transformers`              | Conversational travel assistant and local CPU embeddings     |
+| **Document OCR**         | Google Cloud Document AI                                         | Identity and organizer document text extraction              |
+| **Storage**              | AWS S3 (`@aws-sdk/client-s3`)                                    | Private object storage with presigned GET URLs               |
+| **Payments**             | Razorpay                                                         | Community trip checkout and signature verification           |
+| **Secrets & DevOps**     | Docker, Doppler, GitHub Actions, AWS (EC2, ECR, RDS, SSM), Nginx | Containerization, secret injection, and automated deployment |
+| **Logging & Metrics**    | Winston, Morgan, `prom-client`                                   | Rotating log files and Prometheus `/metrics` endpoint        |
 
 ---
 
-## 🛠️ Technology Stack & Tooling
-
-| Domain               | Technology / Library              | Purpose                                                      |
-| :------------------- | :-------------------------------- | :----------------------------------------------------------- |
-| **Runtime**          | Node.js (v22+ LTS)                | Asynchronous non-blocking runtime                            |
-| **Language**         | TypeScript (v5.x Strict)          | Type safety, zero `any` policy                               |
-| **Framework**        | Express 5                         | High-throughput HTTP routing                                 |
-| **IoC / DI**         | TSyringe (`reflect-metadata`)     | Loose coupling and dependency inversion                      |
-| **Database**         | PostgreSQL 16+                    | Relational persistence                                       |
-| **Extensions**       | `PostGIS` & `pgvector`            | Spatial indexing and vector embeddings                       |
-| **ORM**              | Prisma 7.x (Multi-schema)         | Type-safe query building and migrations                      |
-| **Caching & Queues** | Redis 7 & BullMQ                  | Fast key-value storage, session locks & worker queues        |
-| **Real-Time**        | Socket.io 4.x                     | WebRTC signaling, presence and instant chat                  |
-| **AI / Embeddings**  | `@huggingface/transformers`       | Local CPU MiniLM-L6-v2 vector embeddings                     |
-| **Agent Graph**      | `@langchain/langgraph`            | Stateful multi-node conversational RAG workflow              |
-| **Document AI**      | Google Cloud Document AI          | OCR identity verification and entity parsing                 |
-| **Cloud Storage**    | AWS SDK v3 (`@aws-sdk/client-s3`) | Presigned URL asset management                               |
-| **Containerization** | Docker & Docker Compose           | Multi-stage production builds and custom DB containers       |
-| **Secret Ops**       | Doppler CLI                       | Centralized secret vault & runtime injection                 |
-| **CI/CD**            | GitHub Actions                    | Branch validation, conventional commit checks, automated ECR |
-| **Cloud Deployment** | AWS ECR, EC2 & AWS SSM            | Keyless OIDC image publishing & zero-SSH automated deploy    |
-| **Payments**         | Razorpay SDK & HMAC-SHA256        | Cryptographically verified payments                          |
-| **Validation**       | Zod                               | Schema parsing and runtime assertion                         |
-
----
-
-## 🚀 Getting Started (Local Development)
+## Local Development Setup
 
 ### 1. Prerequisites
 
-- **Node.js**: `v20.x` or `v22.x`
-- **Docker & Docker Compose**: Installed and running
-- **Doppler CLI**: (Optional for Doppler-injected environments)
-- **AWS S3 Bucket & Google Cloud Console**: Configured
+- Node.js `v22.x`
+- Docker & Docker Compose
 
-### 2. Quickstart with Docker Compose
-
-The fastest way to spin up the entire ecosystem (API, PostGIS + pgvector, Redis) is via Docker Compose:
+### 2. Run with Docker Compose
 
 ```bash
-# Clone the repository
-git clone https://github.com/Nasif284/Voymate.git
-cd Voymate/Server
+git clone https://github.com/Nasif284/Voymate-server.git
+cd Voymate-server
 
-# Start all services with Doppler secret injection
-DOPPLER_TOKEN=your_token docker compose up --build
-
-# Alternatively, start services using standard local environment
+# Start Postgres (PostGIS + pgvector) and Redis
 docker compose up -d postgres redis
-npm run dev
-```
 
-### 3. Database Migration & Vector Extension Setup
-
-Ensure PostgreSQL has the required extensions enabled:
-
-```sql
-CREATE EXTENSION IF NOT EXISTS postgis;
-CREATE EXTENSION IF NOT EXISTS vector;
-```
-
-Then execute:
-
-```bash
-# Generate Prisma Client models
+# Install dependencies and generate Prisma client
+npm install
 npm run db:generate
 
-# Run schema migrations
+# Run migrations and seed initial roles & countries
 npm run db:migrate
-
-# Seed lookup tables, travel styles, and baseline data
 npm run db:seed
-```
 
-### 4. Running the Server
-
-```bash
-# Run with Doppler secret injection (Recommended)
-doppler run -- npm run dev
-
-# Standard development mode with hot-reloading (via tsx watch)
+# Start development server
 npm run dev
-
-# Debug mode with Chrome DevTools inspector on port 9229
-npm run debug
-
-# Production build & start
-npm run build
-npm run start
 ```
 
-### 5. Telemetry & Code Quality
+### 3. Useful Scripts
 
 ```bash
-# Verify TypeScript strict typing across the entire codebase
-npm run build
-
-# Run ESLint validation
-npm run lint
-
-# Format code with Prettier
-npm run format
-
-# Inspect live Prometheus metrics
-curl http://localhost:3000/metrics
+npm run dev              # Run in development watch mode (tsx)
+npm run build            # Compile TypeScript to dist/
+npm run start            # Start compiled production build
+npm run lint             # Run ESLint
+npm run format:check     # Check formatting with Prettier
+npm run db:migrate       # Run Prisma migrations in dev
+npm run db:migrate:deploy # Apply pending migrations in production
 ```
-
----
-
-## 👨‍💻 Engineering Philosophy & Takeaways
-
-> _"In an era where AI can generate standard boilerplate code in seconds, true engineering excellence lies in architectural discipline, data modeling, concurrency control, system observability, and boundary enforcement."_
-
-This server is constructed as a demonstration of production-grade software craftsmanship:
-
-- **Maintainability over Convenience**: Inverting dependencies via TSyringe ensures that any database, cache, or external provider can be swapped with zero impact on domain use cases.
-- **Resource Efficiency**: Moving vector embeddings in-process via `@huggingface/transformers` saves thousands in third-party API costs while slashing latency.
-- **Asynchronous Reliability**: Heavy AI document extraction is completely isolated from user-facing HTTP transactions using robust Redis BullMQ queues.
-- **Security by Design**: Doppler secret injection eliminates plaintext secrets from production disks, and AWS SSM enables zero-SSH automated deployments without opening vulnerable management ports.
-
----
-
-<div align="center">
-  <sub>Engineered with precision for Voymate. Designed for scale, resilience, and real-time human connection.</sub>
-</div>

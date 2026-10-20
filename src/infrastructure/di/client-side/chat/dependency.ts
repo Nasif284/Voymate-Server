@@ -2,8 +2,6 @@ import { container } from 'tsyringe';
 import { TOKENS } from '../../tokens';
 import { IGetDirectChatUseCase } from '../../../../application/interfaces/use-cases/chats/get-direct-chat.interface';
 import { GetDirectChatUseCase } from '../../../../application/use-cases/chats/get-direct-chat.usecase';
-import { IGetGroupChatUseCase } from '../../../../application/interfaces/use-cases/chats/get-group-chat.interface';
-import { GetGroupChatUseCase } from '../../../../application/use-cases/chats/get-group-chat.interface';
 import { ISendChatMessageUseCase } from '../../../../application/interfaces/use-cases/chats/send-message.interface';
 import { SendChatMessageUseCase } from '../../../../application/use-cases/chats/send-message.usecase';
 import { IGetChatMessagesUseCase } from '../../../../application/interfaces/use-cases/chats/get-messages.interface';
@@ -21,10 +19,6 @@ export function registerChatsDependency() {
   container.registerSingleton<IGetDirectChatUseCase>(
     TOKENS.IGetDirectChatUseCase,
     GetDirectChatUseCase,
-  );
-  container.registerSingleton<IGetGroupChatUseCase>(
-    TOKENS.IGetGroupChatUseCase,
-    GetGroupChatUseCase,
   );
   container.registerSingleton<ISendChatMessageUseCase>(
     TOKENS.ISendChatMessageUseCase,

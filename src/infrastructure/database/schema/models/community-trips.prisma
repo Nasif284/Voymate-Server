@@ -1,0 +1,46 @@
+model CommunityTrip {
+  id              String                   @id @default(uuid()) @db.Uuid
+  communityId     String                   @map("community_id") @db.Uuid
+  title           String                   @db.VarChar(255)
+  slug            String                   @unique @db.VarChar(255)
+  category        CommunityTripCategory
+  pricingType     CommunityTripPricingType @map("pricing_type")
+  price           Decimal?                 @db.Decimal(10, 2)
+  currency        String                   @default("INR") @db.VarChar(10)
+  priceNote       String?                  @map("price_note") @db.VarChar(255)
+
+  destinationName String                   @map("destination_name") @db.VarChar(255)
+  city            String                   @db.VarChar(100)
+  state           String                   @db.VarChar(100)
+  country         String                   @default("India") @db.VarChar(100)
+
+  dateFrom        DateTime                 @map("date_from") @db.Date
+  dateTo          DateTime                 @map("date_to") @db.Date
+  durationText    String                   @map("duration_text") @db.VarChar(100)
+  maxCapacity     Int                      @map("max_capacity")
+  joinedCount     Int                      @default(0) @map("joined_count")
+
+  description     String                   @db.Text
+  itinerary       String                   @db.Text
+  gallery         String[]                 @default([])
+
+  inclusions      String?                  @db.Text
+  exclusions      String?                  @db.Text
+
+  status          CommunityTripStatus      @default(PUBLISHED)
+
+  createdAt       DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt       DateTime?                @map("deleted_at") @db.Timestamptz(6)
+
+  community       Community                @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  bookings        CommunityTripBooking[]
+
+  @@index([slug])
+  @@index([communityId])
+  @@index([category])
+  @@index([pricingType])
+  @@index([status])
+  @@index([dateFrom])
+  @@map("community_trips")
+}

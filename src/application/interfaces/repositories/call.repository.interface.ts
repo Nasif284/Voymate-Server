@@ -11,7 +11,6 @@ export interface CreateCallData {
   mediaType: CallMediaType;
   callerId: string;
   recipientId?: string;
-  tripGroupId?: string;
 }
 
 export interface CreateCallParticipantData {

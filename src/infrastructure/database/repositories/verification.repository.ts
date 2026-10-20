@@ -1,6 +1,12 @@
 import { inject, injectable } from 'tsyringe';
 import { BaseRepository } from './base.repository';
-import { Prisma } from '@prisma/client';
+import {
+  Prisma,
+  VerificationStatus,
+  VerificationDocumentType,
+  VerificationDocumentSide,
+  VerificationActivityType,
+} from '@prisma/client';
 import {
   IVerificationRepository,
   UpdateVerificationAfterOcrRepositoryDTO,
@@ -33,6 +39,9 @@ export class VerificationRepository
   async submitVerification(
     data: SubmitVerificationRepositoryDTO,
   ): Promise<Verification> {
+    const documentType =
+      data.documentTypeCode.toUpperCase() as VerificationDocumentType;
+
     const verification = await this.prisma.$transaction(async (tx) => {
       const existing = await tx.verification.findFirst({
         where: {
@@ -44,15 +53,15 @@ export class VerificationRepository
         const verification = await tx.verification.create({
           data: {
             userId: data.userId,
-            documentTypeCode: data.documentTypeCode,
-            statusCode: 'processing',
+            documentType,
+            status: VerificationStatus.PROCESSING,
           },
         });
 
         await tx.verificationDocument.createMany({
           data: data.documents.map((document) => ({
             verificationId: verification.id,
-            sideCode: document.sideCode,
+            side: document.sideCode.toUpperCase() as VerificationDocumentSide,
             storageKey: document.storageKey,
             mimeType: document.mimeType,
             fileSize: document.fileSize,
@@ -62,7 +71,7 @@ export class VerificationRepository
         await tx.verificationActivity.create({
           data: {
             verificationId: verification.id,
-            actionCode: 'submitted',
+            action: VerificationActivityType.SUBMITTED,
           },
         });
 
@@ -86,8 +95,8 @@ export class VerificationRepository
           id: existing.id,
         },
         data: {
-          documentTypeCode: data.documentTypeCode,
-          statusCode: 'processing',
+          documentType,
+          status: VerificationStatus.PROCESSING,
           assignedReviewerId: null,
           reviewStartedAt: null,
           reviewedAt: null,
@@ -102,7 +111,7 @@ export class VerificationRepository
       await tx.verificationDocument.createMany({
         data: data.documents.map((document) => ({
           verificationId: verification.id,
-          sideCode: document.sideCode,
+          side: document.sideCode.toUpperCase() as VerificationDocumentSide,
           storageKey: document.storageKey,
           mimeType: document.mimeType,
           fileSize: document.fileSize,
@@ -112,7 +121,7 @@ export class VerificationRepository
       await tx.verificationActivity.create({
         data: {
           verificationId: verification.id,
-          actionCode: 'submitted',
+          action: VerificationActivityType.SUBMITTED,
         },
       });
 
@@ -122,8 +131,8 @@ export class VerificationRepository
     return {
       id: verification.id,
       assignedReviewerId: verification.assignedReviewerId!,
-      documentTypeCode: verification.documentTypeCode,
-      statusCode: verification.statusCode,
+      documentTypeCode: verification.documentType,
+      statusCode: verification.status,
       userId: verification.userId,
     };
   }
@@ -131,37 +140,43 @@ export class VerificationRepository
   async getMyVerification(
     userId: string,
   ): Promise<GetDocVerificationResponseDTO | null> {
-    return await this.prisma.verification.findFirst({
+    const record = await this.prisma.verification.findFirst({
       where: {
         userId,
-      },
-      include: {
-        status: {
-          select: {
-            code: true,
-            name: true,
-          },
-        },
-        documentType: {
-          select: {
-            code: true,
-            name: true,
-          },
-        },
       },
       orderBy: {
         submittedAt: 'desc',
       },
     });
+
+    if (!record) {
+      return null;
+    }
+
+    return {
+      id: record.id,
+      status: {
+        code: record.status,
+        name: record.status,
+      },
+      documentType: {
+        code: record.documentType,
+        name: record.documentType,
+      },
+      submittedAt: record.submittedAt,
+      reviewedAt: record.reviewedAt,
+      rejectionReason: record.rejectionReason,
+      resubmissionReason: record.resubmissionReason,
+    };
   }
+
   async getVerificationQueue(dto: GetVerificationQueueRequestDTO): Promise<{
     items: VerificationQueueItemDTO[];
     total: number;
   }> {
-    console.log(dto);
     const where: Prisma.VerificationWhereInput = {
       ...(dto.tab && {
-        statusCode: dto.tab.toLocaleLowerCase(),
+        status: dto.tab.toUpperCase() as VerificationStatus,
       }),
     };
 
@@ -187,7 +202,6 @@ export class VerificationRepository
     const [items, total] = await this.prisma.$transaction([
       this.prisma.verification.findMany({
         where,
-
         include: {
           user: {
             select: {
@@ -197,21 +211,6 @@ export class VerificationRepository
               avatarUrl: true,
             },
           },
-
-          status: {
-            select: {
-              code: true,
-              name: true,
-            },
-          },
-
-          documentType: {
-            select: {
-              code: true,
-              name: true,
-            },
-          },
-
           reviewer: {
             select: {
               id: true,
@@ -219,7 +218,6 @@ export class VerificationRepository
             },
           },
         },
-
         orderBy: {
           submittedAt: 'desc',
         },
@@ -244,13 +242,13 @@ export class VerificationRepository
         },
 
         documentType: {
-          code: verification.documentType.code,
-          name: verification.documentType.name,
+          code: verification.documentType,
+          name: verification.documentType,
         },
 
         status: {
-          code: verification.status.code,
-          name: verification.status.name,
+          code: verification.status,
+          name: verification.status,
         },
 
         submittedAt: verification.submittedAt,
@@ -264,6 +262,7 @@ export class VerificationRepository
       total,
     };
   }
+
   async getVerificationDetails(
     verificationId: string,
   ): Promise<VerificationDetailsRepositoryResponse | null> {
@@ -271,42 +270,24 @@ export class VerificationRepository
       where: {
         id: verificationId,
       },
-
       select: {
         id: true,
-
         submittedAt: true,
         reviewStartedAt: true,
         reviewedAt: true,
-
         reviewNotes: true,
         rejectionReason: true,
         resubmissionReason: true,
-
         overallRiskScore: true,
         ocrConfidence: true,
-
-        status: {
-          select: {
-            code: true,
-            name: true,
-          },
-        },
-
-        documentType: {
-          select: {
-            code: true,
-            name: true,
-          },
-        },
-
+        status: true,
+        documentType: true,
         reviewer: {
           select: {
             id: true,
             fullName: true,
           },
         },
-
         user: {
           select: {
             id: true,
@@ -314,13 +295,10 @@ export class VerificationRepository
             email: true,
             phone: true,
             avatarUrl: true,
-
             createdAt: true,
-
             isEmailVerified: true,
             isPhoneVerified: true,
             isIdVerified: true,
-
             country: {
               select: {
                 name: true,
@@ -328,7 +306,6 @@ export class VerificationRepository
             },
           },
         },
-
         documents: {
           select: {
             id: true,
@@ -336,15 +313,9 @@ export class VerificationRepository
             mimeType: true,
             width: true,
             height: true,
-
-            side: {
-              select: {
-                code: true,
-              },
-            },
+            side: true,
           },
         },
-
         extractedData: {
           select: {
             fullName: true,
@@ -354,27 +325,17 @@ export class VerificationRepository
             dateOfBirth: true,
             expiryDate: true,
             issuingCountry: true,
-
             analysisSummary: true,
           },
         },
-
         activities: {
           orderBy: {
             createdAt: 'desc',
           },
-
           select: {
             id: true,
             createdAt: true,
-
-            action: {
-              select: {
-                code: true,
-                name: true,
-              },
-            },
-
+            action: true,
             admin: {
               select: {
                 fullName: true,
@@ -388,36 +349,87 @@ export class VerificationRepository
     if (!verification) {
       return null;
     }
+
     return {
-      ...verification,
+      id: verification.id,
+      submittedAt: verification.submittedAt,
+      reviewStartedAt: verification.reviewStartedAt,
+      reviewedAt: verification.reviewedAt,
+      reviewNotes: verification.reviewNotes,
+      rejectionReason: verification.rejectionReason,
+      resubmissionReason: verification.resubmissionReason,
       overallRiskScore: verification.overallRiskScore?.toNumber() ?? null,
       ocrConfidence: verification.ocrConfidence?.toNumber() ?? null,
+      status: {
+        code: verification.status,
+        name: verification.status,
+      },
+      documentType: {
+        code: verification.documentType,
+        name: verification.documentType,
+      },
+      reviewer: verification.reviewer,
+      user: verification.user,
+      documents: verification.documents.map((doc) => ({
+        id: doc.id,
+        storageKey: doc.storageKey,
+        mimeType: doc.mimeType,
+        width: doc.width,
+        height: doc.height,
+        side: {
+          code: doc.side,
+        },
+      })),
+      extractedData: verification.extractedData,
+      activities: verification.activities.map((act) => ({
+        id: act.id,
+        createdAt: act.createdAt,
+        action: {
+          code: act.action,
+          name: act.action,
+        },
+        admin: act.admin,
+      })),
     };
   }
+
   async getVerificationForProcessing(
     verificationId: string,
   ): Promise<VerificationProcessingProjection | null> {
-    return this.prisma.verification.findUnique({
+    const result = await this.prisma.verification.findUnique({
       where: {
         id: verificationId,
       },
-
       select: {
         id: true,
-        statusCode: true,
-        documentTypeCode: true,
-
+        status: true,
+        documentType: true,
         documents: {
           select: {
             id: true,
-            sideCode: true,
+            side: true,
             storageKey: true,
             mimeType: true,
           },
         },
       },
     });
+
+    if (!result) return null;
+
+    return {
+      id: result.id,
+      statusCode: result.status,
+      documentTypeCode: result.documentType,
+      documents: result.documents.map((d) => ({
+        id: d.id,
+        sideCode: d.side,
+        storageKey: d.storageKey,
+        mimeType: d.mimeType,
+      })),
+    };
   }
+
   async updateVerificationAfterOcr(
     verificationId: string,
     data: UpdateVerificationAfterOcrRepositoryDTO,
@@ -462,7 +474,7 @@ export class VerificationRepository
         },
 
         data: {
-          statusCode: 'under_review',
+          status: VerificationStatus.UNDER_REVIEW,
           ocrConfidence: data.extraction.confidence,
           overallRiskScore: data.analysis.overallRiskScore,
         },
@@ -470,7 +482,7 @@ export class VerificationRepository
       await tx.verificationActivity.create({
         data: {
           verificationId,
-          actionCode: 'ocr_completed',
+          action: VerificationActivityType.OCR_COMPLETED,
         },
       });
     });
@@ -486,7 +498,7 @@ export class VerificationRepository
       },
       select: {
         id: true,
-        statusCode: true,
+        status: true,
       },
     });
 
@@ -494,7 +506,7 @@ export class VerificationRepository
       throw new Error('Verification not found');
     }
 
-    if (verification.statusCode !== 'under_review') {
+    if (verification.status !== VerificationStatus.UNDER_REVIEW) {
       throw new Error('Only verifications under review can be approved.');
     }
     await this.prisma.$transaction(async (tx) => {
@@ -504,7 +516,7 @@ export class VerificationRepository
         },
 
         data: {
-          statusCode: dto.statusCode,
+          status: dto.statusCode.toUpperCase() as VerificationStatus,
           assignedReviewerId: dto.reviewerId,
           reviewedAt: dto.reviewedAt,
           rejectionReason: dto.rejectionReason,
@@ -515,7 +527,7 @@ export class VerificationRepository
       await tx.verificationActivity.create({
         data: {
           verificationId,
-          actionCode: dto.activityCode,
+          action: dto.activityCode.toUpperCase() as VerificationActivityType,
           performedByAdminId: dto.reviewerId,
         },
       });
@@ -531,11 +543,11 @@ export class VerificationRepository
       },
       select: {
         id: true,
-        statusCode: true,
+        status: true,
         documents: {
           select: {
             storageKey: true,
-            sideCode: true,
+            side: true,
           },
         },
       },
@@ -544,7 +556,7 @@ export class VerificationRepository
       return null;
     }
     return verification.documents.map((d) => ({
-      side: d.sideCode,
+      side: d.side,
       storageKey: d.storageKey,
     }));
   }

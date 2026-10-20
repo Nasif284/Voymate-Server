@@ -6,4 +6,8 @@ export interface NearbyUsersResponseDTO {
   page: number;
   limit: number;
   totalPages: number;
+  isFallback: boolean;
+  fallbackScope?: 'state' | 'country' | 'global';
+  fallbackRegion?: string | null;
+  radiusKm?: number;
 }

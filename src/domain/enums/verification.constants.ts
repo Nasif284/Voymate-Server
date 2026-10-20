@@ -1,14 +1,31 @@
-export const VerificationActivity = {
-  SUBMITTED: 'submitted',
-  REVIEW_STARTED: 'review_started',
-  APPROVED: 'approved',
-  REJECTED: 'rejected',
-  RESUBMITTED: 'resubmitted',
-} as const;
-export const VerificationStatus = {
-  PROCESSING: 'processing',
-  UNDER_REVIEW: 'under_review',
-  APPROVED: 'approved',
-  REJECTED: 'rejected',
-  RESUBMISSION_REQUIRED: 'resubmission_required',
-} as const;
+export enum VerificationActivityType {
+  SUBMITTED = 'SUBMITTED',
+  OCR_COMPLETED = 'OCR_COMPLETED',
+  REVIEW_STARTED = 'REVIEW_STARTED',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  RESUBMISSION_REQUESTED = 'RESUBMISSION_REQUESTED',
+  NOTE_ADDED = 'NOTE_ADDED',
+  ASSIGNED = 'ASSIGNED',
+}
+
+export const VerificationActivity = VerificationActivityType;
+
+export enum VerificationStatus {
+  PROCESSING = 'PROCESSING',
+  UNDER_REVIEW = 'UNDER_REVIEW',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  RESUBMISSION_REQUIRED = 'RESUBMISSION_REQUIRED',
+}
+
+export enum VerificationDocumentType {
+  PASSPORT = 'PASSPORT',
+  NATIONAL_ID = 'NATIONAL_ID',
+  DRIVERS_LICENSE = 'DRIVERS_LICENSE',
+}
+
+export enum VerificationDocumentSide {
+  FRONT = 'FRONT',
+  BACK = 'BACK',
+}

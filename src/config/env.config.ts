@@ -50,4 +50,8 @@ export const config = {
     authToken: process.env.TWILIO_AUTH_TOKEN!,
     phoneNumber: process.env.TWILIO_PHONE_NUMBER!,
   },
+  razorpay: {
+    keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_mockKeyId',
+    keySecret: process.env.RAZORPAY_KEY_SECRET || 'mockKeySecret',
+  },
 };

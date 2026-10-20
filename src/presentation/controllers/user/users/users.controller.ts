@@ -40,14 +40,15 @@ export class UsersController {
   };
   getNearbyUsers = async (req: Request, res: Response): Promise<Response> => {
     const userId = req.user?.userId;
-    const { page, limit } = req.query;
+    const { page, limit, radiusKm } = req.query;
     if (!userId) {
       throw new UserNotFoundError();
     }
     const data = await this._getNearbyUsersUseCase.execute({
       userId,
-      page: parseInt(page as string),
-      limit: parseInt(limit as string),
+      page: parseInt(page as string) || 1,
+      limit: parseInt(limit as string) || 6,
+      radiusKm: radiusKm ? parseInt(radiusKm as string) : 50,
     });
     return res
       .status(HttpStatus.OK)
@@ -56,8 +57,10 @@ export class UsersController {
 
   getUserProfile = async (req: Request, res: Response): Promise<Response> => {
     const { id } = req.params;
+    const currentUserId = req.user?.userId;
     const data = await this._getUserProfileUseCase.execute({
       userId: id as string,
+      currentUserId,
     });
 
     return res

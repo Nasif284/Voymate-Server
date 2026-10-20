@@ -13,6 +13,7 @@ import ms, { StringValue } from 'ms';
 import { config } from '../../../../config/env.config';
 import { IAdminRefreshToken } from '../../../interfaces/use-cases/auth/admin/admin-refresh.interface';
 import { AdminNotFoundError } from '../../../../domain/errors/admin.error';
+import { formatAdminRoleDisplayName } from '../../../../domain/enums/admin-role.enum';
 import { inject, injectable } from 'tsyringe';
 import { TOKENS } from '../../../../infrastructure/di/tokens';
 @injectable()
@@ -55,10 +56,12 @@ export class AdminRefreshToken implements IAdminRefreshToken {
     const newAccessToken = this._tokenService.generateAccessToken({
       userId,
       email: user.email,
+      role: user.role.name,
     });
     const newRefreshToken = this._tokenService.generateRefreshToken({
       userId,
       email: user.email,
+      role: user.role.name,
     });
     const newRefreshTokenHash = this._tokenService.hashToken(newRefreshToken);
     await this._sessionService.store(
@@ -74,6 +77,7 @@ export class AdminRefreshToken implements IAdminRefreshToken {
         id: user.id,
         email: user.email,
         fullName: user.fullName,
+        role: formatAdminRoleDisplayName(user.role.name),
       },
     };
   }

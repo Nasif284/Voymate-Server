@@ -1,4 +1,18 @@
+export type ConnectionStatus =
+  | 'CONNECTED'
+  | 'REQUEST_SENT'
+  | 'REQUEST_RECEIVED'
+  | 'NONE';
+
 export interface TripMatch {
+  mode?: 'TRIP' | 'PROFILE' | 'SEARCH';
+  connectionStatus?: ConnectionStatus;
+  requestId?: string;
+  forTrip?: {
+    id: string;
+    name: string;
+  };
+  forTripName?: string;
   user: {
     id: string;
     fullName: string;
@@ -14,14 +28,23 @@ export interface TripMatch {
   tripMatch: {
     id: string;
     matchedTripId: string;
-    totalPoints: number;
+    totalPoints?: number | null;
     dateFrom: Date;
     dateTo: Date;
     destination: string;
+    mode?: 'TRIP' | 'PROFILE' | 'SEARCH';
+    connectionStatus?: ConnectionStatus;
+    requestId?: string;
+    forTrip?: {
+      id: string;
+      name: string;
+    };
+    forTripName?: string;
   };
 }
 
 export interface TripMatchResponseDTO {
+  buddiesOnRoad?: TripMatch[];
   matches: TripMatch[];
   limit: number;
   page: number;

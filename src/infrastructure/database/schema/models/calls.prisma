@@ -5,7 +5,6 @@ enum CallMediaType {
 
 enum CallScope {
   DIRECT
-  TRIP_GROUP
 }
 
 enum CallStatus {
@@ -26,13 +25,12 @@ enum CallParticipantStatus {
 model Call {
   id String @id @default(uuid()) @db.Uuid
 
-  scope CallScope
+  scope CallScope @default(DIRECT)
   mediaType CallMediaType
   status CallStatus @default(RINGING)
 
   callerId String @map("caller_id") @db.Uuid
   recipientId String? @map("recipient_id") @db.Uuid
-  tripGroupId String? @map("trip_group_id") @db.Uuid
 
   startedAt DateTime? @map("started_at") @db.Timestamptz(6)
   endedAt DateTime? @map("ended_at") @db.Timestamptz(6)
@@ -40,13 +38,11 @@ model Call {
 
   caller User @relation("CallCaller", fields: [callerId], references: [id])
   recipient User? @relation("CallRecipient", fields: [recipientId], references: [id])
-  tripGroup TripGroup? @relation("TripGroupCalls", fields: [tripGroupId], references: [id])
 
   participants CallParticipant[]
 
   @@index([callerId])
   @@index([recipientId])
-  @@index([tripGroupId, status])
   @@map("calls")
 }
 

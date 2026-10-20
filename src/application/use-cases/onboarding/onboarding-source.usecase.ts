@@ -11,8 +11,5 @@ export class OnboardingSource implements IOnboardingSource {
   ) {}
   async execute(dto: OnboardingSourceRequestDTO): Promise<void> {
     await this._userRepository.addUserOnboardingSource(dto);
-    await this._userRepository.updateOnboarding(dto.userId, {
-      onboardingStep: 2,
-    });
   }
 }

@@ -1,4 +1,9 @@
-import { Prisma, PrismaClient, Admin as PrismaAdmin } from '@prisma/client';
+import {
+  Prisma,
+  PrismaClient,
+  Admin as PrismaAdmin,
+  AccountStatus,
+} from '@prisma/client';
 
 import { BaseRepository } from './base.repository';
 
@@ -16,6 +21,10 @@ import { capitalizeFirstLetter } from '../../../shared/helpers/capitalizseFirstL
 import { UpdateAdminStatusDTO } from '../../../application/dtos/admins/request/update-admin.dto';
 import { AdminNotFoundError } from '../../../domain/errors/admin.error';
 import { AdminMapper } from '../mappers/admin.mapper';
+import {
+  normalizeAdminRole,
+  formatAdminRoleDisplayName,
+} from '../../../domain/enums/admin-role.enum';
 
 @injectable()
 export class AdminRepository
@@ -67,9 +76,22 @@ export class AdminRepository
   }
 
   async createAdmin(data: CreateAdminData): Promise<Admin> {
+    const normalized = normalizeAdminRole(data.role);
     const role = await this.prisma.role.findFirst({
       where: {
-        name: data.role,
+        OR: [
+          { name: { equals: data.role, mode: Prisma.QueryMode.insensitive } },
+          ...(normalized
+            ? [
+                {
+                  name: {
+                    equals: normalized,
+                    mode: Prisma.QueryMode.insensitive,
+                  },
+                },
+              ]
+            : []),
+        ],
       },
     });
 
@@ -119,8 +141,8 @@ export class AdminRepository
         id: a.id,
         email: a.email,
         name: a.fullName,
-        role: a.role.name,
-        status: capitalizeFirstLetter(a.accountStatusCode),
+        role: formatAdminRoleDisplayName(a.role.name),
+        status: capitalizeFirstLetter(a.accountStatus),
         lastActive: a.lastActiveAt!,
         ip: a.lastActiveIp!,
       })),
@@ -150,9 +172,22 @@ export class AdminRepository
   }
 
   async updateRole(adminId: string, roleName: string): Promise<void> {
+    const normalized = normalizeAdminRole(roleName);
     const role = await this.prisma.role.findFirst({
       where: {
-        name: roleName,
+        OR: [
+          { name: { equals: roleName, mode: Prisma.QueryMode.insensitive } },
+          ...(normalized
+            ? [
+                {
+                  name: {
+                    equals: normalized,
+                    mode: Prisma.QueryMode.insensitive,
+                  },
+                },
+              ]
+            : []),
+        ],
       },
     });
     if (role) {
@@ -180,22 +215,23 @@ export class AdminRepository
     if (!admin) {
       throw new AdminNotFoundError();
     }
+    const targetStatus = status.statusCode.toUpperCase() as AccountStatus;
     await this.prisma.$transaction([
       this.prisma.admin.update({
         where: {
           id: adminId,
         },
         data: {
-          accountStatusCode: status.statusCode,
+          accountStatus: targetStatus,
         },
       }),
       this.prisma.adminStatusHistory.create({
         data: {
-          newStatusCode: status.statusCode,
+          newStatus: targetStatus,
           ...(status.reason && {
             reason: status.reason,
           }),
-          previousStatusCode: admin.accountStatusCode,
+          previousStatus: admin.accountStatus,
           actionedBy,
           adminId,
         },

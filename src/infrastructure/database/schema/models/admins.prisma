@@ -25,26 +25,25 @@ model Admin {
   roleId String @map("role_id") @db.Uuid
   role   Role   @relation(fields: [roleId], references: [id])
 
-  accountStatusCode String        @default("active") @map("account_status_code") @db.VarChar(20)
-  accountStatus     AccountStatus @relation(fields: [accountStatusCode], references: [code])
+  accountStatus AccountStatus @default(ACTIVE) @map("account_status")
 
   statusHistory          AdminStatusHistory[]
   assignedVerifications  Verification[]         @relation("VerificationReviewer")
   verificationActivities VerificationActivity[]
 
   @@index([email])
-  @@index([accountStatusCode])
+  @@index([accountStatus])
   @@map("admins")
 }
 
 model AdminStatusHistory {
-  id                 String   @id @default(uuid()) @db.Uuid
-  adminId            String   @map("user_id") @db.Uuid
-  previousStatusCode String   @db.VarChar(20)
-  newStatusCode      String   @db.VarChar(20)
-  reason             String?
-  actionedBy         String?  @map("actioned_by") @db.Uuid
-  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id             String        @id @default(uuid()) @db.Uuid
+  adminId        String        @map("user_id") @db.Uuid
+  previousStatus AccountStatus @map("previous_status")
+  newStatus      AccountStatus @map("new_status")
+  reason         String?
+  actionedBy     String?       @map("actioned_by") @db.Uuid
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
 
   admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
 

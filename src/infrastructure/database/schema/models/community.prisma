@@ -1,0 +1,43 @@
+model Community {
+  id                 String                      @id @default(uuid()) @db.Uuid
+  name               String                      @db.VarChar(150)
+  slug               String                      @unique @db.VarChar(150)
+  email              String                      @unique @db.VarChar(255)
+  passwordHash       String                      @map("password_hash") @db.VarChar(255)
+  phone              String?                     @db.VarChar(20)
+  isEmailVerified    Boolean                     @default(false) @map("is_email_verified")
+  emailVerifiedAt    DateTime?                   @map("email_verified_at") @db.Timestamptz(6)
+
+  // Profile & Branding
+  tagline            String?                     @db.VarChar(255)
+  description        String?                     @db.Text
+  avatarUrl          String?                     @map("avatar_url") @db.VarChar(500)
+  coverUrl           String?                     @map("cover_url") @db.VarChar(500)
+  city               String?                     @db.VarChar(100)
+  state              String?                     @db.VarChar(100)
+  country            String                      @default("India") @db.VarChar(100)
+  instagramHandle    String?                     @map("instagram_handle") @db.VarChar(100)
+  websiteUrl         String?                     @map("website_url") @db.VarChar(255)
+  isOnboarded        Boolean                     @default(false) @map("is_onboarded")
+
+  // "Verified by Voymate" Verification
+  verificationStatus CommunityVerificationStatus @default(UNVERIFIED) @map("verification_status")
+  isVerified         Boolean                     @default(false) @map("is_verified")
+  verificationDocUrl String?                     @map("verification_doc_url") @db.VarChar(500)
+  verificationNotes  String?                     @map("verification_notes") @db.Text
+  verifiedAt         DateTime?                   @map("verified_at") @db.Timestamptz(6)
+
+  rating             Decimal                     @default(5.0) @db.Decimal(3, 2)
+  totalTripsCount    Int                         @default(0) @map("total_trips_count")
+
+  createdAt          DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime                    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt          DateTime?                   @map("deleted_at") @db.Timestamptz(6)
+
+  trips              CommunityTrip[]
+
+  @@index([slug])
+  @@index([email])
+  @@index([isVerified])
+  @@map("communities")
+}

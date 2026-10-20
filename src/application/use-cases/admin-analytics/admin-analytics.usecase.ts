@@ -8,6 +8,7 @@ import {
   AdminAnalyticsDTO,
   AnalyticsPeriod,
 } from '../../dtos/admin-analytics/response/admin-analytics.dto';
+import { formatEnumToDisplayName } from '../../../shared/helpers/enum-formatter.helper';
 
 @injectable()
 export class AdminAnalyticsUseCase implements IAdminAnalyticsUseCase {
@@ -74,7 +75,7 @@ export class AdminAnalyticsUseCase implements IAdminAnalyticsUseCase {
     );
 
     const acquisition = userAcquisition.map((item) => ({
-      source: item.source,
+      source: formatEnumToDisplayName(item.source),
       count: item.count,
       percentage:
         acquisitionTotal === 0

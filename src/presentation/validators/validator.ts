@@ -1,10 +1,18 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodSchema, ZodError } from 'zod';
 
-export function validate(schema: ZodSchema) {
+export function validate(
+  schema: ZodSchema,
+  source: 'body' | 'query' | 'params' = 'body',
+) {
   return (req: Request, res: Response, next: NextFunction): void => {
-    console.log(req.body);
-    const result = schema.safeParse(req.body);
+    const dataToValidate =
+      source === 'query'
+        ? req.query
+        : source === 'params'
+          ? req.params
+          : req.body;
+    const result = schema.safeParse(dataToValidate);
 
     if (!result.success) {
       const errors = (result.error as ZodError).issues.map((e) => ({
@@ -23,7 +31,10 @@ export function validate(schema: ZodSchema) {
       return;
     }
 
-    req.body = result.data;
+    if (source === 'body' && req.body && typeof req.body === 'object') {
+      Object.assign(req.body, result.data);
+    }
+
     next();
   };
 }

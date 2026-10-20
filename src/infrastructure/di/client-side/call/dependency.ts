@@ -2,12 +2,8 @@ import { container } from 'tsyringe';
 import { ICreateDirectCallUseCase } from '../../../../application/interfaces/use-cases/calls/create-direct-call.interface';
 import { TOKENS } from '../../tokens';
 import { CreateDirectCallUseCase } from '../../../../application/use-cases/calls/create-direct-call.use-case';
-import { ICreateGroupCallUseCase } from '../../../../application/interfaces/use-cases/calls/create-group-call.interface';
-import { CreateGroupCallUseCase } from '../../../../application/use-cases/calls/create-group-call.usecase';
 import { IJoinDirectCallUseCase } from '../../../../application/interfaces/use-cases/calls/join-direct-call.interface';
 import { JoinDirectCallUseCase } from '../../../../application/use-cases/calls/join-direct-call.use-case';
-import { IJoinGroupCallUseCase } from '../../../../application/interfaces/use-cases/calls/join-group-call.interface';
-import { JoinGroupCallUseCase } from '../../../../application/use-cases/calls/join-group-call.interface';
 import { IJoinCallUseCase } from '../../../../application/interfaces/use-cases/calls/join-call.interface';
 import { JoinCallUseCase } from '../../../../application/use-cases/calls/join-call.usecase';
 import { ILeaveCallUseCase } from '../../../../application/interfaces/use-cases/calls/leave-call.interface';
@@ -24,17 +20,9 @@ export function registerCallDependency() {
     TOKENS.ICreateDirectCallUseCase,
     CreateDirectCallUseCase,
   );
-  container.registerSingleton<ICreateGroupCallUseCase>(
-    TOKENS.ICreateGroupCallUseCase,
-    CreateGroupCallUseCase,
-  );
   container.registerSingleton<IJoinDirectCallUseCase>(
     TOKENS.IJoinDirectCallUseCase,
     JoinDirectCallUseCase,
-  );
-  container.registerSingleton<IJoinGroupCallUseCase>(
-    TOKENS.IJoinGroupCallUseCase,
-    JoinGroupCallUseCase,
   );
   container.registerSingleton<IJoinCallUseCase>(
     TOKENS.IJoinCallUseCase,

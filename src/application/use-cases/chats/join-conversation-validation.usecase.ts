@@ -18,21 +18,10 @@ export class JoinChatConversationValidationUseCase implements IJoinChatConversat
       throw new Error('Conversation not found.');
     }
 
-    let isMember = false;
-
-    if (conversation.type === 'DIRECT') {
-      isMember = await this.chatRepository.isDirectConversationMember(
-        conversationId,
-        userId,
-      );
-    }
-
-    if (conversation.type === 'GROUP') {
-      isMember = await this.chatRepository.isGroupConversationMember(
-        conversationId,
-        userId,
-      );
-    }
+    const isMember = await this.chatRepository.isDirectConversationMember(
+      conversationId,
+      userId,
+    );
 
     if (!isMember) {
       throw new Error('You are not a member of this conversation.');

@@ -55,33 +55,6 @@ export class ChatRepository implements IChatRepository {
     return conversation.id;
   }
 
-  async getOrCreateGroupConversation(groupId: string): Promise<string> {
-    const existing = await this.prisma.chatConversation.findUnique({
-      where: {
-        groupId,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (existing) {
-      return existing.id;
-    }
-
-    const conversation = await this.prisma.chatConversation.create({
-      data: {
-        type: ChatType.GROUP,
-        groupId,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    return conversation.id;
-  }
-
   async getConversation(conversationId: string) {
     return this.prisma.chatConversation.findUnique({
       where: {
@@ -92,7 +65,6 @@ export class ChatRepository implements IChatRepository {
         type: true,
         userAId: true,
         userBId: true,
-        groupId: true,
       },
     });
   }
@@ -113,30 +85,6 @@ export class ChatRepository implements IChatRepository {
             userBId: userId,
           },
         ],
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    return !!conversation;
-  }
-
-  async isGroupConversationMember(
-    conversationId: string,
-    userId: string,
-  ): Promise<boolean> {
-    const conversation = await this.prisma.chatConversation.findFirst({
-      where: {
-        id: conversationId,
-        type: ChatType.GROUP,
-        group: {
-          members: {
-            some: {
-              userId,
-            },
-          },
-        },
       },
       select: {
         id: true,

@@ -1,4 +1,5 @@
 import { inject, injectable } from 'tsyringe';
+import { TravelType, TravelPersonality, MatchPreference } from '@prisma/client';
 import { TravelStyleRequestDTO } from '../../dtos/onbaording/request/travel-style.dto';
 import { ISetTravelStyle } from '../../interfaces/use-cases/onboarding/travel-style.interface';
 import { TOKENS } from '../../../infrastructure/di/tokens';
@@ -12,9 +13,15 @@ export class SetTravelStyle implements ISetTravelStyle {
   ) {}
   async execute(dto: TravelStyleRequestDTO): Promise<void> {
     await this._userRepository.updateUser(dto.userId, {
-      travelTypeCode: dto.travelType,
-      travelPersonalityCode: dto.travelPersonality,
-      matchWithCode: dto.matchWith,
+      travelType: dto.travelType
+        ? (dto.travelType.toUpperCase() as TravelType)
+        : undefined,
+      travelPersonality: dto.travelPersonality
+        ? (dto.travelPersonality.toUpperCase() as TravelPersonality)
+        : undefined,
+      matchPreference: dto.matchWith
+        ? (dto.matchWith.toUpperCase() as MatchPreference)
+        : undefined,
     });
     await this._userRepository.createTravelInterests(dto.userId, dto.interests);
     await this._userRepository.updateOnboarding(dto.userId, {

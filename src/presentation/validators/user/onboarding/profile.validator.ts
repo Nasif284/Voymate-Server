@@ -13,7 +13,7 @@ export const OnboardingProfileSchema = z.object({
   nationality: z.string().min(1, 'Nationality is required.'),
   city: z.string().min(1, 'City is required.'),
   state: z.string().min(1, 'City is required.'),
-  gender: z.enum(['male', 'female', 'non-binary'], {
+  gender: z.enum(['MALE', 'FEMALE', 'NON_BINARY'], {
     error: 'Please select a gender.',
   }),
 

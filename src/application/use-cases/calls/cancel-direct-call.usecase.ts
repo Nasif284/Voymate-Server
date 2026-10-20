@@ -76,7 +76,6 @@ export class CancelDirectCallUseCase implements ICancelDirectCallUseCase {
 
       callerId: call.callerId,
       recipientId: call.recipientId,
-      tripGroupId: call.tripGroupId,
 
       startedAt: call.startedAt,
       endedAt: call.endedAt,

@@ -1,4 +1,5 @@
 import { inject, injectable } from 'tsyringe';
+import { Gender } from '@prisma/client';
 import { IEditOnboardingProfile } from '../../interfaces/use-cases/onboarding/edit-profile.interface';
 import { TOKENS } from '../../../infrastructure/di/tokens';
 import { IUserRepository } from '../../interfaces/repositories/user.reposetory';
@@ -15,7 +16,7 @@ export class EditOnboardingProfile implements IEditOnboardingProfile {
     await this._userRepository.updateUser(dto.userId, {
       dateOfBirth: dto.dateOfBirth,
       bio: dto.about,
-      genderCode: dto.gender,
+      gender: dto.gender ? (dto.gender.toUpperCase() as Gender) : undefined,
       countryCode: dto.nationality,
       state: dto.state,
       city: dto.city,

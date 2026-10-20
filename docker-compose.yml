@@ -13,7 +13,7 @@ services:
       # REDIS_URL: ${REDIS_URL}
       # NODE_ENV: ${NODE_ENV}
       # PORT: ${PORT}
-    command: sh -c "doppler run -- sh -c 'npm run db:push && npm run db:generate && npm run dev'"
+    command: sh -c "doppler run -- sh -c 'npm run db:generate && npm run dev'"
     volumes:
       - .:/app
       - /app/node_modules
@@ -22,6 +22,11 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
 
   postgres:
     build:
@@ -30,17 +35,14 @@ services:
     environment:
       POSTGRES_USER: ${DB_USER:-nasif}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-1234}
-      POSTGRES_DB: ${DB_NAME:-travelbuddy}
+      POSTGRES_DB: ${DB_NAME:-voymate}
     ports:
       - '5433:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test:
-        [
-          'CMD-SHELL',
-          'pg_isready -U ${DB_USER:-nasif} -d ${DB_NAME:-travelbuddy}',
-        ]
+        ['CMD-SHELL', 'pg_isready -U ${DB_USER:-nasif} -d ${DB_NAME:-voymate}']
       interval: 5s
       timeout: 5s
       retries: 5

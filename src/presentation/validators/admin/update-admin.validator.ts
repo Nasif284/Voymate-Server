@@ -1,7 +1,14 @@
 import { z } from 'zod';
+import { normalizeAdminRole } from '../../../domain/enums/admin-role.enum';
 
 export const UpdateAdminSchema = z.object({
-  role: z.string().optional(),
+  role: z
+    .string()
+    .refine((val) => !val || normalizeAdminRole(val) !== null, {
+      message:
+        'Invalid admin role. Allowed roles: Super Admin, Moderator, Analyst.',
+    })
+    .optional(),
   status: z
     .object({
       statusCode: z

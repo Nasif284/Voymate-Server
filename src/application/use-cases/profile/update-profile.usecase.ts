@@ -1,4 +1,5 @@
 import { inject, injectable } from 'tsyringe';
+import { TravelPersonality } from '@prisma/client';
 import { IUpdateProfile } from '../../interfaces/use-cases/profile/update-profile.interface';
 import { TOKENS } from '../../../infrastructure/di/tokens';
 import { IUserRepository } from '../../interfaces/repositories/user.reposetory';
@@ -36,7 +37,9 @@ export class UpdateProfile implements IUpdateProfile {
       bio,
       fullName,
       isTraveling,
-      travelPersonalityCode,
+      travelPersonality: travelPersonalityCode
+        ? (travelPersonalityCode.toUpperCase() as TravelPersonality)
+        : undefined,
     });
   }
 }

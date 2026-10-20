@@ -24,7 +24,7 @@ export class AdminMapper {
 
       passwordHash: admin.passwordHash,
 
-      accountStatusCode: admin.accountStatusCode,
+      accountStatusCode: admin.accountStatus,
 
       avatarUrl: admin.avatarUrl,
 

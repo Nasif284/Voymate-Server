@@ -12,19 +12,26 @@ import { UsersController } from '../../presentation/controllers/user/users/users
 import { TripController } from '../../presentation/controllers/trip/trip.controller';
 import { ConnectionsController } from '../../presentation/controllers/user/connections/connection.controller';
 import { ProfileController } from '../../presentation/controllers/user/profile/profile.controller';
-import { ChecklistController } from '../../presentation/controllers/trip/checklist/checklist.controller';
-import { ExpenseController } from '../../presentation/controllers/trip/expense/expense.controller';
-import { TripManagementController } from '../../presentation/controllers/admin/trip-management/trips-management.controller';
 import { AdminsController } from '../../presentation/controllers/admin/admins/admins.controller';
 import { AdminAuthMiddleware } from '../../presentation/middleware/user/auth/adminAuthMiddleware';
 import { UserAuthMiddleware } from '../../presentation/middleware/user/auth/userAuth.middleware';
 import { VerificationQueueController } from '../../presentation/controllers/admin/verification-queue/verification.controller';
-import { ItineraryController } from '../../presentation/controllers/trip/Itenerary/Itinerary.controller';
 import { AiAssistantController } from '../../presentation/controllers/user/ai-assistant/ai-assistant.controller';
 import { ChatController } from '../../presentation/controllers/user/chat/chat.controller';
 import { CallController } from '../../presentation/controllers/user/call/call.controller';
 import { Server } from 'socket.io';
 import { AdminAnalyticsController } from '../../presentation/controllers/admin/analytics/admin-analytics.controller';
+
+import { CommunityAuthController } from '../../presentation/controllers/community/community-auth.controller';
+import { CommunityTripController } from '../../presentation/controllers/community/community-trip.controller';
+import { CommunityBookingController } from '../../presentation/controllers/community/community-booking.controller';
+import { CommunityAuthMiddleware } from '../../presentation/middleware/user/auth/communityAuth.middleware';
+
+export interface CommunityControllers {
+  communityAuthController: CommunityAuthController;
+  communityTripController: CommunityTripController;
+  communityBookingController: CommunityBookingController;
+}
 
 export interface AppContainer {
   adminControllers: AdminControllers;
@@ -33,29 +40,24 @@ export interface AppContainer {
   lookupController: LookupController;
   locationController: LocationController;
   usersController: UsersController;
-  tripControllers: TripControllers;
+  tripController: TripController;
   connectionsController: ConnectionsController;
   profileController: ProfileController;
   assistantController: AiAssistantController;
   authMiddlewares: AuthMiddlewares;
   chatController: ChatController;
   callController: CallController;
+  communityControllers: CommunityControllers;
 }
 
-export interface TripControllers {
-  tripController: TripController;
-  checklistController: ChecklistController;
-  expenseController: ExpenseController;
-  itineraryController: ItineraryController;
-}
 export interface AuthMiddlewares {
   adminAuthMiddleware: AdminAuthMiddleware;
   userAuthMiddleware: UserAuthMiddleware;
+  communityAuthMiddleware: CommunityAuthMiddleware;
 }
 export interface AdminControllers {
   adminAuthController: AdminAuthController;
   userManagementController: UserManagementController;
-  tripManagementController: TripManagementController;
   adminsController: AdminsController;
   verificationController: VerificationQueueController;
   adminAnalyticsController: AdminAnalyticsController;
@@ -77,12 +79,8 @@ export function buildContainer(
   const tripController = container.resolve(TripController);
   const connectionsController = container.resolve(ConnectionsController);
   const profileController = container.resolve(ProfileController);
-  const checklistController = container.resolve(ChecklistController);
-  const expenseController = container.resolve(ExpenseController);
-  const tripManagementController = container.resolve(TripManagementController);
   const adminsController = container.resolve(AdminsController);
   const verificationController = container.resolve(VerificationQueueController);
-  const itineraryController = container.resolve(ItineraryController);
   const assistantController = container.resolve(AiAssistantController);
   const chatController = container.resolve(ChatController);
   const callController = container.resolve(CallController);
@@ -90,32 +88,39 @@ export function buildContainer(
 
   const adminAuthMiddleware = container.resolve(AdminAuthMiddleware);
   const userAuthMiddleware = container.resolve(UserAuthMiddleware);
+  const communityAuthMiddleware = container.resolve(CommunityAuthMiddleware);
+
+  const communityAuthController = container.resolve(CommunityAuthController);
+  const communityTripController = container.resolve(CommunityTripController);
+  const communityBookingController = container.resolve(
+    CommunityBookingController,
+  );
 
   return {
     authController,
     adminControllers: {
       adminAuthController,
-      tripManagementController,
       userManagementController,
       adminsController,
       verificationController,
       adminAnalyticsController,
     },
+    communityControllers: {
+      communityAuthController,
+      communityTripController,
+      communityBookingController,
+    },
     onboardingController,
     lookupController,
     locationController,
     usersController,
-    tripControllers: {
-      tripController,
-      checklistController,
-      expenseController,
-      itineraryController,
-    },
+    tripController,
     connectionsController,
     profileController,
     authMiddlewares: {
       userAuthMiddleware,
       adminAuthMiddleware,
+      communityAuthMiddleware,
     },
     assistantController,
     chatController,

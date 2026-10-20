@@ -3,7 +3,6 @@ import { inject, injectable } from 'tsyringe';
 
 import { TOKENS } from '../../../../infrastructure/di/tokens';
 import { ICreateDirectCallUseCase } from '../../../../application/interfaces/use-cases/calls/create-direct-call.interface';
-import { ICreateGroupCallUseCase } from '../../../../application/interfaces/use-cases/calls/create-group-call.interface';
 import { IJoinCallUseCase } from '../../../../application/interfaces/use-cases/calls/join-call.interface';
 import { ILeaveCallUseCase } from '../../../../application/interfaces/use-cases/calls/leave-call.interface';
 import { IDeclineDirectCallUseCase } from '../../../../application/interfaces/use-cases/calls/decline-direct-call.interface';
@@ -17,9 +16,6 @@ export class CallController {
   constructor(
     @inject(TOKENS.ICreateDirectCallUseCase)
     private readonly createDirectCallUseCase: ICreateDirectCallUseCase,
-
-    @inject(TOKENS.ICreateGroupCallUseCase)
-    private readonly createGroupCallUseCase: ICreateGroupCallUseCase,
 
     @inject(TOKENS.IJoinCallUseCase)
     private readonly joinCallUseCase: IJoinCallUseCase,
@@ -37,7 +33,6 @@ export class CallController {
   createDirectCall = async (req: Request, res: Response): Promise<Response> => {
     const callerId = req.user!.userId;
     const { recipientId, mediaType } = req.body;
-    console.log(req.body);
     const call = await this.createDirectCallUseCase.execute(callerId, {
       recipientId,
       mediaType,
@@ -45,18 +40,6 @@ export class CallController {
     return res
       .status(HttpStatus.CREATED)
       .json(ApiResponse.success('Call created successfully.', { call }));
-  };
-
-  createGroupCall = async (req: Request, res: Response): Promise<Response> => {
-    const callerId = req.user!.userId;
-    const { tripGroupId, mediaType } = req.body;
-    const call = await this.createGroupCallUseCase.execute(callerId, {
-      tripGroupId,
-      mediaType,
-    });
-    return res
-      .status(HttpStatus.CREATED)
-      .json(ApiResponse.success('Group call created successfully.', { call }));
   };
 
   joinCall = async (req: Request, res: Response): Promise<Response> => {

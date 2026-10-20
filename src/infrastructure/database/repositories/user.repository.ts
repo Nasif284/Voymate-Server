@@ -1,4 +1,13 @@
-import { Prisma, PrismaClient, User as PrismaUser } from '@prisma/client';
+import {
+  Prisma,
+  PrismaClient,
+  User as PrismaUser,
+  ConnectionRequestStatus,
+  OnboardingSource,
+  ProfileVisibility,
+  RequestFromOption,
+  TripStatus,
+} from '@prisma/client';
 import { BaseRepository } from './base.repository';
 
 import {
@@ -36,6 +45,10 @@ import { GetSettingsResponseDTO } from '../../../application/dtos/profile/respon
 import { GetAllRequestsResponseDTO } from '../../../application/dtos/connections/response/get-all-requests.dto';
 import { GetSentRequestsResponseDTO } from '../../../application/dtos/connections/response/get-sent-requests.dto';
 import { UserMapper } from '../mappers/user.mapper';
+import {
+  formatAccountStatusDisplayName,
+  formatEnumToDisplayName,
+} from '../../../shared/helpers/enum-formatter.helper';
 @injectable()
 export class UserRepository
   extends BaseRepository<
@@ -149,7 +162,7 @@ export class UserRepository
     };
 
     if (filter.status && filter.status !== 'all') {
-      where.accountStatusCode = filter.status;
+      where.accountStatus = filter.status.toUpperCase() as AccountStatus;
     }
 
     if (filter.joined === '7d') {
@@ -252,7 +265,7 @@ export class UserRepository
         },
 
         data: {
-          accountStatusCode,
+          accountStatus: accountStatusCode,
         },
       });
       await tx.userStatusHistory.create({
@@ -269,15 +282,18 @@ export class UserRepository
   async addUserOnboardingSource(
     payload: OnboardingSourceRequestDTO,
   ): Promise<void> {
-    console.log(payload.source.length);
-    const codes = await this.prisma.onboardingSource.findMany();
-    console.log(codes);
-    await this.prisma.userOnboarding.create({
-      data: {
-        onboardingSourceCode: payload.source,
+    await this.prisma.userOnboarding.upsert({
+      where: {
         userId: payload.userId,
-        onboardingStep: 1,
+      },
+      create: {
+        userId: payload.userId,
+        onboardingSource: payload.source as OnboardingSource,
+        onboardingStep: 2,
         onboardingCompleted: false,
+      },
+      update: {
+        onboardingSource: payload.source as OnboardingSource,
       },
     });
   }
@@ -339,7 +355,7 @@ export class UserRepository
         currentCity: payload.city,
         currentCountryCode: payload.countryCode,
         lastSeenAt: new Date(),
-        onlineStatusCode: OnlineStatus.ONLINE,
+        onlineStatus: OnlineStatus.ONLINE,
       },
       update: {
         currentLat: payload.latitude,
@@ -347,9 +363,19 @@ export class UserRepository
         currentCity: payload.city,
         currentCountryCode: payload.countryCode,
         lastSeenAt: new Date(),
-        onlineStatusCode: OnlineStatus.ONLINE,
+        onlineStatus: OnlineStatus.ONLINE,
       },
     });
+
+    try {
+      await this.prisma.$executeRaw`
+        UPDATE user_locations
+        SET coordinates = ST_SetSRID(ST_MakePoint(${payload.longitude}::double precision, ${payload.latitude}::double precision), 4326)::geography
+        WHERE user_id = ${payload.userId}::uuid
+      `;
+    } catch {
+      // Ignore if spatial update fails
+    }
   }
   async getUserLocation(
     userId: string,
@@ -372,66 +398,131 @@ export class UserRepository
     currentUserId: string,
     params: { page: number; limit: number },
   ): Promise<UserCardDetailsResponseDTO> {
-    const [users, total] = await this.prisma.$transaction([
-      this.prisma.user.findMany({
-        where: {
-          deletedAt: null,
-          id: {
-            not: currentUserId,
-          },
-          onboarding: {
-            onboardingCompleted: true,
-          },
-          accountStatusCode: AccountStatus.ACTIVE,
-        },
-        include: {
-          location: {
-            include: {
-              onlineStatus: true,
-              currentCountry: true,
-            },
-          },
-          country: true,
-          travelType: true,
-          travelPersonality: true,
-          interests: true,
-        },
-        skip: (params.page - 1) * params.limit,
-        take: params.limit,
-      }),
+    const { page, limit } = params;
+    const skip = (page - 1) * limit;
 
-      this.prisma.user.count({
-        where: {
-          deletedAt: null,
-          id: {
-            not: currentUserId,
-          },
-          onboarding: {
-            onboardingCompleted: true,
-          },
-          accountStatusCode: AccountStatus.ACTIVE,
-        },
-      }),
-    ]);
+    // 1. Fetch current user's active upcoming trip
+    const activeTrip = await this.prisma.trip.findFirst({
+      where: {
+        createdBy: currentUserId,
+        status: TripStatus.UPCOMING,
+        deletedAt: null,
+        dateTo: { gte: new Date() },
+      },
+      orderBy: { dateFrom: 'asc' },
+      include: { destination: true },
+    });
 
+    // 2. Destination and region/state exclusion criteria
+    const destinationExclusion: Prisma.TripWhereInput | undefined = activeTrip
+      ? {
+          OR: [
+            { destinationId: activeTrip.destinationId },
+            ...(activeTrip.destination?.name
+              ? [
+                  {
+                    destination: {
+                      name: {
+                        equals: activeTrip.destination.name,
+                        mode: 'insensitive' as const,
+                      },
+                    },
+                  },
+                ]
+              : []),
+            ...(activeTrip.destination?.state
+              ? [
+                  {
+                    destination: {
+                      state: {
+                        equals: activeTrip.destination.state,
+                        mode: 'insensitive' as const,
+                      },
+                    },
+                  },
+                ]
+              : []),
+          ],
+        }
+      : undefined;
+
+    // 3. Fetch candidate trips ordered by dateFrom: 'asc'
+    const trips = await this.prisma.trip.findMany({
+      where: {
+        createdBy: { not: currentUserId },
+        status: TripStatus.UPCOMING,
+        deletedAt: null,
+        dateTo: { gte: new Date() },
+        NOT: destinationExclusion,
+        creator: {
+          accountStatus: AccountStatus.ACTIVE,
+          deletedAt: null,
+          onboarding: { onboardingCompleted: true },
+        },
+      },
+      orderBy: { dateFrom: 'asc' },
+      include: {
+        destination: {
+          include: { country: true },
+        },
+        creator: {
+          include: {
+            country: true,
+            interests: true,
+          },
+        },
+      },
+    });
+
+    // 4. Deduplicate by trip.createdBy (preserves earliest trip per user)
+    const uniqueUserTrips: typeof trips = [];
+    const seenUsers = new Set<string>();
+    for (const trip of trips) {
+      if (!seenUsers.has(trip.createdBy)) {
+        seenUsers.add(trip.createdBy);
+        uniqueUserTrips.push(trip);
+      }
+    }
+
+    const total = uniqueUserTrips.length;
+    const paginatedTrips = uniqueUserTrips.slice(skip, skip + limit);
+
+    // 5. Map to UserCardDetailsResponseDTO
     return {
-      users: users.map((user) => ({
-        id: user.id,
-        fullName: user.fullName,
-        avatarUrl: user.avatarUrl,
-        coverUrl: user.coverUrl,
-        age: user.dateOfBirth ? calculateAge(user.dateOfBirth) : null,
-        city: user.city ?? null,
-        state: user.state ?? null,
-        country: user.country?.name ?? null,
-        travelType: user.travelType?.code ?? null,
-        travelPersonality: user.travelPersonality?.code ?? null,
-        interests: user.interests.map((i) => i.interest),
-      })),
-      limit: params.limit,
-      page: params.page,
+      users: paginatedTrips.map((trip) => {
+        const u = trip.creator;
+        return {
+          id: u.id,
+          fullName: u.fullName,
+          avatarUrl: u.avatarUrl,
+          coverUrl: u.coverUrl,
+          age: u.dateOfBirth ? calculateAge(u.dateOfBirth) : null,
+          city: u.city,
+          state: u.state,
+          country: u.country?.name ?? null,
+          travelType: u.travelType,
+          travelPersonality: u.travelPersonality,
+          interests: u.interests.map((i) => i.interest),
+          isTraveling: u.isTraveling,
+          activeTrip: {
+            id: trip.id,
+            name: trip.name,
+            destination: trip.destination.name,
+            destinationCity: trip.destination.city,
+            destinationState: trip.destination.state,
+            destinationCountry:
+              trip.destination.country?.name ?? trip.destination.countryCode,
+            dateFrom: trip.dateFrom,
+            dateTo: trip.dateTo,
+            travelStyle: trip.travelStyle,
+            budgetStyle: trip.budgetStyle,
+          },
+        };
+      }),
       total,
-      totalPages: Math.ceil(total / params.limit),
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
     };
   }
 
@@ -443,149 +534,226 @@ export class UserRepository
   ): Promise<NearbyUsersResponseDTO> {
     const offset = (page - 1) * limit;
 
-    const currentUserLocation = await this.prisma.userLocation.findUnique({
-      where: {
-        userId: currentUserId,
+    const currentUser = await this.prisma.user.findUnique({
+      where: { id: currentUserId },
+      select: {
+        state: true,
+        countryCode: true,
+        location: {
+          select: {
+            currentLat: true,
+            currentLng: true,
+            currentState: true,
+            currentCountryCode: true,
+          },
+        },
       },
     });
 
-    if (!currentUserLocation?.currentLat || !currentUserLocation?.currentLng) {
-      return {
-        users: [],
-        total: 0,
-        page,
-        limit,
-        totalPages: 0,
-      };
+    const userState =
+      currentUser?.location?.currentState || currentUser?.state || null;
+    const hasCoordinates = !!(
+      currentUser?.location?.currentLat && currentUser?.location?.currentLng
+    );
+    const latitude = hasCoordinates
+      ? Number(currentUser!.location!.currentLat)
+      : null;
+    const longitude = hasCoordinates
+      ? Number(currentUser!.location!.currentLng)
+      : null;
+
+    if (hasCoordinates) {
+      const users = await this.prisma.$queryRaw<UserWithDetails[]>`
+        SELECT
+          u.id,
+          u.full_name AS "fullName",
+          u.avatar_url AS "avatarUrl",
+          u.cover_url AS "coverUrl",
+          u.is_traveling AS "isTraveling",
+          EXTRACT(
+            YEAR FROM AGE(
+              CURRENT_DATE,
+              u.date_of_birth
+            )
+          )::int AS age,
+          u.origin_city AS city,
+          u.origin_region AS state,
+          c.name AS country,
+          u.travel_type AS "travelType",
+          u.travel_personality AS "travelPersonality",
+          COALESCE(
+            ARRAY_AGG(
+              DISTINCT ui.interest
+            ) FILTER (
+              WHERE ui.interest IS NOT NULL
+            ),
+            '{}'
+          ) AS interests,
+          ROUND(
+            (
+              ST_Distance(
+                COALESCE(
+                  CASE
+                    WHEN ul.current_lng IS NOT NULL AND ul.current_lat IS NOT NULL
+                    THEN ST_SetSRID(
+                      ST_MakePoint(
+                        ul.current_lng::double precision,
+                        ul.current_lat::double precision
+                      ),
+                      4326
+                    )::geography
+                    ELSE NULL
+                  END,
+                  ul.coordinates
+                ),
+                ST_SetSRID(
+                  ST_MakePoint(
+                    ${longitude}::double precision,
+                    ${latitude}::double precision
+                  ),
+                  4326
+                )::geography
+              ) / 1000
+            )::numeric,
+            1
+          )::double precision AS "distanceKm"
+        FROM users u
+        INNER JOIN user_locations ul
+          ON ul.user_id = u.id
+        LEFT JOIN user_onboarding uo
+          ON uo.user_id = u.id
+        LEFT JOIN countries c
+          ON c.code = u.country_code
+        LEFT JOIN user_interests ui
+          ON ui.user_id = u.id
+        WHERE
+          u.id <> ${currentUserId}::uuid
+          AND u.deleted_at IS NULL
+          AND u.account_status = 'ACTIVE'
+          AND (uo.onboarding_completed = true OR uo.user_id IS NULL)
+          AND u.is_traveling = true
+          AND (
+            (ul.current_lat IS NOT NULL AND ul.current_lng IS NOT NULL)
+            OR ul.coordinates IS NOT NULL
+          )
+          AND ST_DWithin(
+            COALESCE(
+              CASE
+                WHEN ul.current_lng IS NOT NULL AND ul.current_lat IS NOT NULL
+                THEN ST_SetSRID(
+                  ST_MakePoint(
+                    ul.current_lng::double precision,
+                    ul.current_lat::double precision
+                  ),
+                  4326
+                )::geography
+                ELSE NULL
+              END,
+              ul.coordinates
+            ),
+            ST_SetSRID(
+              ST_MakePoint(
+                ${longitude}::double precision,
+                ${latitude}::double precision
+              ),
+              4326
+            )::geography,
+            ${radiusKm * 1000}
+          )
+        GROUP BY
+          u.id,
+          u.full_name,
+          u.avatar_url,
+          u.cover_url,
+          u.date_of_birth,
+          u.origin_city,
+          u.origin_region,
+          c.name,
+          u.travel_type,
+          u.travel_personality,
+          u.is_traveling,
+          ul.current_lat,
+          ul.current_lng,
+          ul.coordinates
+        ORDER BY
+          "distanceKm" ASC
+        LIMIT ${limit}
+        OFFSET ${offset}
+      `;
+
+      const totalResult = await this.prisma.$queryRaw<{ count: bigint }[]>`
+        SELECT COUNT(DISTINCT u.id)::bigint AS count
+        FROM users u
+        INNER JOIN user_locations ul
+          ON ul.user_id = u.id
+        LEFT JOIN user_onboarding uo
+          ON uo.user_id = u.id
+        WHERE
+          u.id <> ${currentUserId}::uuid
+          AND u.deleted_at IS NULL
+          AND u.account_status = 'ACTIVE'
+          AND (uo.onboarding_completed = true OR uo.user_id IS NULL)
+          AND u.is_traveling = true
+          AND (
+            (ul.current_lat IS NOT NULL AND ul.current_lng IS NOT NULL)
+            OR ul.coordinates IS NOT NULL
+          )
+          AND ST_DWithin(
+            COALESCE(
+              CASE
+                WHEN ul.current_lng IS NOT NULL AND ul.current_lat IS NOT NULL
+                THEN ST_SetSRID(
+                  ST_MakePoint(
+                    ul.current_lng::double precision,
+                    ul.current_lat::double precision
+                  ),
+                  4326
+                )::geography
+                ELSE NULL
+              END,
+              ul.coordinates
+            ),
+            ST_SetSRID(
+              ST_MakePoint(
+                ${longitude}::double precision,
+                ${latitude}::double precision
+              ),
+              4326
+            )::geography,
+            ${radiusKm * 1000}
+          )
+      `;
+
+      const total = Number(totalResult[0]?.count ?? 0);
+
+      if (users.length > 0) {
+        return {
+          users: users.map((u) => ({
+            ...u,
+            distanceKm:
+              u.distanceKm !== undefined && u.distanceKm !== null
+                ? Number(u.distanceKm)
+                : undefined,
+          })),
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+          isFallback: false,
+          radiusKm,
+        };
+      }
     }
 
-    const latitude = Number(currentUserLocation.currentLat);
-    const longitude = Number(currentUserLocation.currentLng);
-    const users = await this.prisma.$queryRaw<UserWithDetails[]>`
-      SELECT
-        u.id,
-        u.full_name AS "fullName",
-        u.avatar_url AS "avatarUrl",
-        u.cover_url AS "coverUrl",
-        EXTRACT(
-          YEAR FROM AGE(
-            CURRENT_DATE,
-            u.date_of_birth
-          )
-        )::int AS age,
-        u.origin_city AS city,
-        u.origin_region AS state,
-        c.name AS country,
-        tt.code AS "travelType",
-        tp.code AS "travelPersonality",
-        COALESCE(
-          ARRAY_AGG(
-            DISTINCT ui.interest
-          ) FILTER (
-            WHERE ui.interest IS NOT NULL
-          ),
-          '{}'
-        ) AS interests,
-        ROUND(
-          (
-            ST_Distance(
-              ul.coordinates,
-
-              ST_SetSRID(
-                ST_MakePoint(
-                  ${longitude},
-                  ${latitude}
-                ),
-                4326
-              )::geography
-            ) / 1000
-          )::numeric,
-          1
-        ) AS "distanceKm"
-      FROM users u
-      INNER JOIN user_locations ul
-        ON ul.user_id = u.id
-      INNER JOIN user_onboarding uo
-        ON uo.user_id = u.id
-      LEFT JOIN countries c
-        ON c.code =
-        u.country_code
-      LEFT JOIN travel_types tt
-        ON tt.code =
-        u.travel_type_code
-      LEFT JOIN travel_personalities tp
-        ON tp.code =
-        u.travel_personality_code
-      LEFT JOIN user_interests ui
-        ON ui.user_id = u.id
-
-      WHERE
-        u.id <> ${currentUserId}
-        AND u.deleted_at IS NULL
-        AND u.account_status_code = 'active'
-        AND uo.onboarding_completed = true
-        AND ul.coordinates IS NOT NULL
-        AND ST_DWithin(
-          ul.coordinates,
-          ST_SetSRID(
-            ST_MakePoint(
-              ${longitude},
-              ${latitude}
-            ),
-            4326
-          )::geography,
-          ${radiusKm * 1000}
-        )
-
-      GROUP BY
-        u.id,
-        u.full_name,
-        u.avatar_url,
-        u.cover_url,
-        u.date_of_birth,
-        ul.current_city,
-        c.name,
-        tt.code,
-        tp.code,
-        ul.coordinates
-      ORDER BY
-        "distanceKm"
-      LIMIT ${limit}
-      OFFSET ${offset}
-    `;
-
-    const totalResult = await this.prisma.$queryRaw<{ count: bigint }[]>`
-      SELECT COUNT(*)::bigint AS count
-      FROM users u
-      INNER JOIN user_locations ul
-        ON ul.user_id = u.id
-      INNER JOIN user_onboarding uo
-        ON uo.user_id = u.id
-      WHERE
-        u.id <> ${currentUserId}
-        AND u.deleted_at IS NULL
-        AND u.account_status_code = 'active'
-        AND uo.onboarding_completed = true
-        AND ul.coordinates IS NOT NULL
-        AND ST_DWithin(
-          ul.coordinates,
-          ST_SetSRID(
-            ST_MakePoint(
-              ${longitude},
-              ${latitude}
-            ),
-            4326
-          )::geography,
-          ${radiusKm * 1000}
-        )
-    `;
-
+    // Strictly return only travelers within radiusKm (no fallback across state/country)
     return {
-      users,
-      total: Number(totalResult[0]?.count ?? 0),
+      users: [],
+      total: 0,
       page,
       limit,
-      totalPages: Math.ceil(Number(totalResult[0]?.count ?? 0) / limit),
+      totalPages: 1,
+      isFallback: false,
+      radiusKm,
     };
   }
 
@@ -598,26 +766,20 @@ export class UserRepository
       include: {
         location: {
           include: {
-            onlineStatus: true,
             currentCountry: true,
           },
         },
         country: true,
-        travelType: true,
-        travelPersonality: true,
         interests: true,
         languages: true,
         skills: true,
         onboarding: true,
       },
     });
-    const tripCount = await this.prisma.tripGroup.count({
+    const tripCount = await this.prisma.trip.count({
       where: {
-        members: {
-          some: {
-            userId,
-          },
-        },
+        createdBy: userId,
+        deletedAt: null,
       },
     });
     const connectionsCount = await this.prisma.connection.count({
@@ -631,11 +793,11 @@ export class UserRepository
     }
     return {
       id: user.id,
-      status: user.accountStatusCode,
+      status: formatAccountStatusDisplayName(user.accountStatus),
       fullName: user.fullName,
       phone: user.phone,
       isPhoneVerified: user.isPhoneVerified,
-      gender: user.genderCode,
+      gender: user.gender,
       bio: user.bio,
       avatarUrl: user.avatarUrl,
       coverUrl: user.coverUrl,
@@ -644,18 +806,20 @@ export class UserRepository
       state: user.state ?? null,
       isEmailVerified: user.isEmailVerified,
       country: user.country?.name ?? null,
-      travelType: user.travelType?.code ?? null,
-      travelPersonality: user.travelPersonality?.code ?? null,
+      travelType: user.travelType ?? null,
+      travelPersonality: user.travelPersonality ?? null,
       interests: user.interests.map((i) => i.interest),
       languages: user.languages.map((i) => i.language),
       skills: user.skills.map((i) => i.skill),
       createdAt: user.createdAt,
       isTraveling: user.isTraveling,
       dob: user.dateOfBirth!,
-      onboardingCompleted: user.onboarding!.onboardingCompleted,
-      onboardingSource: user.onboarding!.onboardingSourceCode,
-      onboardingStep: user.onboarding!.onboardingStep,
-      matchWith: user.matchWithCode!,
+      onboardingCompleted: user.onboarding?.onboardingCompleted ?? false,
+      onboardingSource: formatEnumToDisplayName(
+        user.onboarding?.onboardingSource,
+      ),
+      onboardingStep: user.onboarding?.onboardingStep ?? 0,
+      matchWith: user.matchPreference!,
       tripCount,
       connectionsCount,
     };
@@ -694,12 +858,23 @@ export class UserRepository
       },
     });
     console.log(existing);
+    let validMatchId: string | null = null;
+    if (payload.matchId) {
+      const matchExists = await this.prisma.tripMatch.findUnique({
+        where: { id: payload.matchId },
+        select: { id: true },
+      });
+      if (matchExists) {
+        validMatchId = payload.matchId;
+      }
+    }
+
     if (existing?.id) {
-      if (existing.statusCode == 'pending') {
+      if (existing.status === ConnectionRequestStatus.PENDING) {
         throw new AlreadyRequestSentError();
       } else if (
-        existing.statusCode == 'cancelled' ||
-        existing.statusCode == 'rejected'
+        existing.status === ConnectionRequestStatus.CANCELLED ||
+        existing.status === ConnectionRequestStatus.DECLINED
       )
         await this.prisma.connectionRequest.update({
           where: {
@@ -708,9 +883,9 @@ export class UserRepository
           data: {
             senderId: payload.senderId,
             receiverId: payload.receiverId,
-            matchId: payload.matchId,
+            matchId: validMatchId,
             message: payload.message,
-            statusCode: 'pending',
+            status: ConnectionRequestStatus.PENDING,
             respondedAt: null,
             createdAt: new Date(),
           },
@@ -722,7 +897,7 @@ export class UserRepository
     }
     await this.prisma.connectionRequest.create({
       data: {
-        matchId: payload.matchId,
+        matchId: validMatchId,
         receiverId: payload.receiverId,
         message: payload.message,
         senderId: payload.senderId,
@@ -735,7 +910,7 @@ export class UserRepository
     const requests = await this.prisma.connectionRequest.findMany({
       where: {
         receiverId: userId,
-        statusCode: 'pending',
+        status: ConnectionRequestStatus.PENDING,
       },
       include: {
         sender: {
@@ -759,7 +934,7 @@ export class UserRepository
             state: req.sender.state,
           },
           createdAt: req.createdAt,
-          status: req.statusCode,
+          status: req.status,
         };
       }),
     };
@@ -769,7 +944,7 @@ export class UserRepository
     const requests = await this.prisma.connectionRequest.findMany({
       where: {
         OR: [{ senderId: userId }, { receiverId: userId }],
-        statusCode: 'pending',
+        status: ConnectionRequestStatus.PENDING,
       },
     });
     return {
@@ -785,7 +960,7 @@ export class UserRepository
     const requests = await this.prisma.connectionRequest.findMany({
       where: {
         senderId: userId,
-        statusCode: 'pending',
+        status: ConnectionRequestStatus.PENDING,
       },
       include: {
         receiver: {
@@ -809,7 +984,7 @@ export class UserRepository
             state: req.receiver.state,
           },
           createdAt: req.createdAt,
-          status: req.statusCode,
+          status: req.status,
         };
       }),
     };
@@ -819,14 +994,15 @@ export class UserRepository
     requestId: string;
     status: string;
   }): Promise<void> {
-    if (payload.status == 'accepted') {
+    const normalizedStatus = payload.status.toUpperCase();
+    if (normalizedStatus === 'ACCEPTED') {
       await this.prisma.$transaction(async (tx) => {
         const request = await tx.connectionRequest.update({
           where: {
             id: payload.requestId,
           },
           data: {
-            statusCode: 'accepted',
+            status: ConnectionRequestStatus.ACCEPTED,
             respondedAt: new Date(),
           },
         });
@@ -845,7 +1021,7 @@ export class UserRepository
           id: payload.requestId,
         },
         data: {
-          statusCode: payload.status,
+          status: normalizedStatus as ConnectionRequestStatus,
           respondedAt: new Date(),
         },
       });
@@ -917,11 +1093,35 @@ export class UserRepository
     userId: string,
     payload: UpdateSettingsRequestDTO,
   ): Promise<void> {
+    const data: {
+      showOnlineStatus?: boolean;
+      showTravelingStatus?: boolean;
+      profileVisibility?: ProfileVisibility;
+      requestsFrom?: RequestFromOption;
+    } = {};
+
+    if (payload.showOnlineStatus !== undefined) {
+      data.showOnlineStatus = payload.showOnlineStatus;
+    }
+    if (payload.showTravelingStatus !== undefined) {
+      data.showTravelingStatus = payload.showTravelingStatus;
+    }
+    if (payload.profileVisibilityCode) {
+      data.profileVisibility = payload.profileVisibilityCode
+        .toUpperCase()
+        .replace(/\s+/g, '_') as ProfileVisibility;
+    }
+    if (payload.requestsFromCode) {
+      data.requestsFrom = payload.requestsFromCode
+        .toUpperCase()
+        .replace(/\s+/g, '_') as RequestFromOption;
+    }
+
     await this.prisma.userPrivacy.update({
       where: {
         userId,
       },
-      data: payload,
+      data,
     });
   }
 
@@ -944,8 +1144,8 @@ export class UserRepository
       throw new Error('Settings not found');
     }
     return {
-      profileVisibilityCode: result.profileVisibilityCode!,
-      requestsFromCode: result.requestsFromCode!,
+      profileVisibilityCode: result.profileVisibility!,
+      requestsFromCode: result.requestsFrom!,
       showOnlineStatus: result.showOnlineStatus,
       showTravelingStatus: result.showTravelingStatus,
       phone: user!.phone,

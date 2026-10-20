@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 export const TravelStyleSchema = z.object({
-  travelType: z.string().min(1),
+  travelType: z.enum(['BUDGET', 'BACKPACKER', 'LUXURY']),
   interests: z.array(z.string()).min(1).max(10),
-  travelPersonality: z.string().min(1),
-  matchWith: z.string().min(1),
+  travelPersonality: z.enum(['INTROVERT', 'AMBIVERT', 'EXTROVERT']),
+  matchWith: z.enum(['MEN', 'WOMEN', 'EVERYONE']),
 });

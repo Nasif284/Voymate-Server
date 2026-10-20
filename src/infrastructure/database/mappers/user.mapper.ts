@@ -36,15 +36,15 @@ export class UserMapper {
       coverUrl: row.coverUrl,
       bio: row.bio,
       dateOfBirth: row.dateOfBirth ? new Date(row.dateOfBirth) : null,
-      genderCode: (row.genderCode as Gender) ?? null,
+      genderCode: (row.gender as Gender) ?? null,
       country: row?.country?.name ?? null,
-      travelTypeCode: (row.travelTypeCode as TravelType) ?? null,
+      travelTypeCode: (row.travelType as TravelType) ?? null,
       travelPersonalityCode:
-        (row.travelPersonalityCode as TravelPersonality) ?? null,
+        (row.travelPersonality as TravelPersonality) ?? null,
       matchWithCode:
-        (row.matchWithCode as MatchPreference) ?? MatchPreference.EVERYONE,
+        (row.matchPreference as MatchPreference) ?? MatchPreference.EVERYONE,
       accountStatusCode:
-        (row.accountStatusCode as AccountStatus) ?? AccountStatus.ACTIVE,
+        (row.accountStatus as AccountStatus) ?? AccountStatus.ACTIVE,
       isPhoneVerified: row.isPhoneVerified ?? false,
       isEmailVerified: row.isEmailVerified ?? false,
       isIdVerified: row.isIdVerified ?? false,
@@ -59,11 +59,10 @@ export class UserMapper {
       privacy: row.privacySettings
         ? {
             profileVisibilityCode:
-              (row.privacySettings
-                .profileVisibilityCode as ProfileVisibility) ??
+              (row.privacySettings.profileVisibility as ProfileVisibility) ??
               ProfileVisibility.EVERYONE,
             requestsFromCode:
-              (row.privacySettings.requestsFromCode as RequestFromOption) ??
+              (row.privacySettings.requestsFrom as RequestFromOption) ??
               RequestFromOption.EVERYONE,
             showOnlineStatus: row.privacySettings.showOnlineStatus ?? true,
             showTravelingStatus:
@@ -75,7 +74,7 @@ export class UserMapper {
             onboardingStep: row.onboarding.onboardingStep ?? 1,
             onboardingCompleted: row.onboarding.onboardingCompleted ?? false,
             onboardingSourceCode:
-              (row.onboarding.onboardingSourceCode as OnboardingSource) ?? null,
+              (row.onboarding.onboardingSource as OnboardingSource) ?? null,
           }
         : undefined,
     };

@@ -64,7 +64,6 @@ export class CreateDirectCallUseCase implements ICreateDirectCallUseCase {
       status: call.status,
       callerId: call.callerId,
       recipientId: call.recipientId,
-      tripGroupId: call.tripGroupId,
       startedAt: call.startedAt,
       endedAt: call.endedAt,
       createdAt: call.createdAt,

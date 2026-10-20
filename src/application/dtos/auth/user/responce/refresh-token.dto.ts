@@ -5,5 +5,6 @@ export interface RefreshTokenResponseDTO {
     id: string;
     fullName: string;
     email: string;
+    role?: string;
   };
 }

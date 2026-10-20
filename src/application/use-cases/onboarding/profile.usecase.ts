@@ -1,4 +1,5 @@
 import { inject, injectable } from 'tsyringe';
+import { Gender } from '@prisma/client';
 import { OnboardingProfileRequestDTO } from '../../dtos/onbaording/request/profile.dto';
 import { ISetUserProfile } from '../../interfaces/use-cases/onboarding/profile.interface';
 import { TOKENS } from '../../../infrastructure/di/tokens';
@@ -31,7 +32,7 @@ export class SetUserProfile implements ISetUserProfile {
       avatarUrl: avatarKey,
       coverUrl: coverKey,
       bio: dto.about,
-      genderCode: dto.gender,
+      gender: dto.gender ? (dto.gender.toUpperCase() as Gender) : undefined,
       countryCode: dto.nationality,
       state: dto.state,
       city: dto.city,

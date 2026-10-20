@@ -11,6 +11,7 @@ import { IAdminLogin } from '../../../interfaces/use-cases/auth/admin/login.inte
 import { inject, injectable } from 'tsyringe';
 import { TOKENS } from '../../../../infrastructure/di/tokens';
 import { AdminLoginResponseDTO } from '../../../dtos/auth/admin/response/admin-login.dto';
+import { formatAdminRoleDisplayName } from '../../../../domain/enums/admin-role.enum';
 @injectable()
 export class AdminLogin implements IAdminLogin {
   private readonly _refreshTtl: number;
@@ -41,10 +42,12 @@ export class AdminLogin implements IAdminLogin {
     const accessToken = this._tokenService.generateAccessToken({
       userId: admin.id,
       email: admin.email,
+      role: admin.role.name,
     });
     const refreshToken = this._tokenService.generateRefreshToken({
       userId: admin.id,
       email: admin.email,
+      role: admin.role.name,
     });
 
     const tokenHash = this._tokenService.hashToken(refreshToken);
@@ -58,7 +61,7 @@ export class AdminLogin implements IAdminLogin {
           id: admin.id,
           email: admin.email,
           fullName: admin.fullName,
-          role: admin.role.name,
+          role: formatAdminRoleDisplayName(admin.role.name),
         },
       },
     };

@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, VerificationStatus } from '@prisma/client';
 import { IAdminAnalyticsRepository } from '../../../application/interfaces/repositories/admin-analytics.repository';
 import { inject, injectable } from 'tsyringe';
 import { TOKENS } from '../../di/tokens';
@@ -96,9 +96,9 @@ export class AdminAnalyticsRepository implements IAdminAnalyticsRepository {
     }[]
   > {
     const result = await this.prisma.userOnboarding.groupBy({
-      by: ['onboardingSourceCode'],
+      by: ['onboardingSource'],
       where: {
-        onboardingSourceCode: {
+        onboardingSource: {
           not: null,
         },
         user: {
@@ -114,7 +114,7 @@ export class AdminAnalyticsRepository implements IAdminAnalyticsRepository {
     });
 
     return result.map((item) => ({
-      source: item.onboardingSourceCode!,
+      source: item.onboardingSource!,
       count: item._count.userId,
     }));
   }
@@ -294,8 +294,8 @@ export class AdminAnalyticsRepository implements IAdminAnalyticsRepository {
   async getPendingVerifications(): Promise<number> {
     return this.prisma.verification.count({
       where: {
-        statusCode: {
-          in: ['processing', 'under_review'],
+        status: {
+          in: [VerificationStatus.PROCESSING, VerificationStatus.UNDER_REVIEW],
         },
       },
     });

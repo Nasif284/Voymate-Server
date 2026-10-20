@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { inject, injectable } from 'tsyringe';
 import { TOKENS } from '../../../../infrastructure/di/tokens';
 import { IGetDirectChatUseCase } from '../../../../application/interfaces/use-cases/chats/get-direct-chat.interface';
-import { IGetGroupChatUseCase } from '../../../../application/interfaces/use-cases/chats/get-group-chat.interface';
 import { ISendChatMessageUseCase } from '../../../../application/interfaces/use-cases/chats/send-message.interface';
 import { IGetChatMessagesUseCase } from '../../../../application/interfaces/use-cases/chats/get-messages.interface';
 import { HttpStatus } from '../../../../domain/enums/HttpStatusCodes.constants';
@@ -15,8 +14,6 @@ export class ChatController {
   constructor(
     @inject(TOKENS.IGetDirectChatUseCase)
     private readonly _getDirectChat: IGetDirectChatUseCase,
-    @inject(TOKENS.IGetGroupChatUseCase)
-    private readonly _getGroupChat: IGetGroupChatUseCase,
     @inject(TOKENS.ISendChatMessageUseCase)
     private readonly _sendMessage: ISendChatMessageUseCase,
     @inject(TOKENS.IGetChatMessagesUseCase)
@@ -39,58 +36,28 @@ export class ChatController {
       .json(ApiResponse.success('Fetched Conversation', { conversationId }));
   };
 
-  getGroupChat = async (req: Request, res: Response): Promise<Response> => {
-    const userId = req.user?.userId;
-    const { groupId } = req.params;
-    const conversationId = await this._getGroupChat.execute(
-      userId!,
-      groupId as string,
-    );
-    return res
-      .status(HttpStatus.OK)
-      .json(ApiResponse.success('Fetched Conversation', { conversationId }));
-  };
-
-  // sendMessage = async (req: Request, res: Response): Promise<Response> => {
-  //   const userId = req.user?.userId;
-  //   const { conversationId } = req.params;
-  //   const { content } = req.body;
-  //   const message = await this._sendMessage.execute(
-  //     userId!,
-  //     conversationId as string,
-  //     content,
-  //   );
-  //   return res
-  //     .status(HttpStatus.CREATED)
-  //     .json(ApiResponse.success('Message Send', { message }));
-  // };
-
   getMessages = async (req: Request, res: Response): Promise<Response> => {
     const userId = req.user?.userId;
     const { conversationId } = req.params;
-    const limit = req.query.limit ? Number(req.query.limit) : 30;
-
-    const cursor =
-      typeof req.query.cursor === 'string' ? req.query.cursor : undefined;
+    const { limit, cursor } = req.query;
 
     const messages = await this._getMessages.execute(
       userId!,
       conversationId as string,
-      limit,
-      cursor,
+      limit ? parseInt(limit as string) : undefined,
+      cursor as string | undefined,
     );
-
     return res
       .status(HttpStatus.OK)
-      .json(ApiResponse.success('Fetched messages', { messages }));
+      .json(ApiResponse.success('Fetched Messages', { messages }));
   };
+
   getDirectConversations = async (
     req: Request,
     res: Response,
   ): Promise<Response> => {
     const userId = req.user?.userId;
     const conversations = await this._getConversations.execute(userId!);
-
     return res
       .status(HttpStatus.OK)
       .json(ApiResponse.success('Fetched Conversations', { conversations }));
@@ -98,14 +65,21 @@ export class ChatController {
 
   uploadImage = async (req: Request, res: Response): Promise<Response> => {
     const userId = req.user?.userId;
-    const conversationId = req.body.conversationId;
+    const conversationId =
+      (req.body.conversationId as string) ||
+      (req.params.conversationId as string);
     const file = req.file;
 
     if (!file) {
-      throw new Error('Image file is required.');
+      return res
+        .status(HttpStatus.BAD_REQUEST)
+        .json(ApiResponse.error('BAD_REQUEST', 'Image file is required.'));
     }
+
     if (!conversationId) {
-      throw new Error('Conversation ID is required.');
+      return res
+        .status(HttpStatus.BAD_REQUEST)
+        .json(ApiResponse.error('BAD_REQUEST', 'Conversation ID is required.'));
     }
 
     const result = await this._uploadChatImageUseCase.execute(
@@ -113,8 +87,9 @@ export class ChatController {
       conversationId,
       file,
     );
+
     return res
       .status(HttpStatus.CREATED)
-      .json(ApiResponse.success('image uploaded', result));
+      .json(ApiResponse.success('Image uploaded successfully', result));
   };
 }

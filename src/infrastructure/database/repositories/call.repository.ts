@@ -27,7 +27,6 @@ export class CallRepository implements ICallRepository {
         mediaType: data.mediaType,
         callerId: data.callerId,
         recipientId: data.recipientId,
-        tripGroupId: data.tripGroupId,
       },
       include: {
         caller: {

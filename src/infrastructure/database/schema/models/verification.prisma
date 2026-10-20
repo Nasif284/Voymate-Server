@@ -2,9 +2,9 @@ model Verification {
     id     String @id @default(uuid()) @db.Uuid
     userId String @map("user_id") @db.Uuid
 
-    documentTypeCode   String  @map("document_type_code") @db.VarChar(30)
-    statusCode         String  @default("processing") @map("status_code") @db.VarChar(30)
-    assignedReviewerId String? @map("assigned_reviewer_id") @db.Uuid
+    documentType       VerificationDocumentType @map("document_type")
+    status             VerificationStatus       @default(PROCESSING) @map("status")
+    assignedReviewerId String?                  @map("assigned_reviewer_id") @db.Uuid
 
     submittedAt     DateTime  @default(now()) @map("submitted_at") @db.Timestamptz(6)
     reviewStartedAt DateTime? @map("review_started_at") @db.Timestamptz(6)
@@ -19,17 +19,15 @@ model Verification {
     createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
     updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-    user         User                     @relation(fields: [userId], references: [id])
-    reviewer     Admin?                   @relation("VerificationReviewer", fields: [assignedReviewerId], references: [id])
-    documentType VerificationDocumentType @relation(fields: [documentTypeCode], references: [code])
-    status       VerificationStatus       @relation(fields: [statusCode], references: [code])
+    user     User   @relation(fields: [userId], references: [id])
+    reviewer Admin? @relation("VerificationReviewer", fields: [assignedReviewerId], references: [id])
 
     documents     VerificationDocument[]
     extractedData VerificationExtractedData?
     activities    VerificationActivity[]
 
     @@index([userId])
-    @@index([statusCode])
+    @@index([status])
     @@index([assignedReviewerId])
     @@map("verifications")
 }
@@ -38,18 +36,17 @@ model VerificationDocument {
     id             String @id @default(uuid()) @db.Uuid
     verificationId String @map("verification_id") @db.Uuid
 
-    sideCode String @map("side_code") @db.VarChar(20)
+    side VerificationDocumentSide @map("side")
 
-    storageKey  String @map("file_url") @db.VarChar(500)
-    mimeType String @map("mime_type") @db.VarChar(100)
-    fileSize Int    @map("file_size")
-    width    Int?
-    height   Int?
+    storageKey String @map("file_url") @db.VarChar(500)
+    mimeType   String @map("mime_type") @db.VarChar(100)
+    fileSize   Int    @map("file_size")
+    width      Int?
+    height     Int?
 
     uploadedAt DateTime @default(now()) @map("uploaded_at") @db.Timestamptz(6)
 
-    verification Verification             @relation(fields: [verificationId], references: [id])
-    side         VerificationDocumentSide @relation(fields: [sideCode], references: [code])
+    verification Verification @relation(fields: [verificationId], references: [id])
 
     @@index([verificationId])
     @@map("verification_documents")
@@ -71,7 +68,7 @@ model VerificationExtractedData {
     issuingAuthority String?   @map("issuing_authority") @db.VarChar(150)
     documentVersion  String?   @map("document_version") @db.VarChar(50)
 
-    rawResponse Json? @map("raw_response")
+    rawResponse     Json? @map("raw_response")
     analysisSummary Json? @map("analysis_summary")
 
     createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -83,19 +80,18 @@ model VerificationExtractedData {
 }
 
 model VerificationActivity {
-    id                 String  @id @default(uuid()) @db.Uuid
-    verificationId     String  @map("verification_id") @db.Uuid
-    actionCode         String  @map("action_code") @db.VarChar(40)
-    performedByAdminId String? @map("performed_by_admin_id") @db.Uuid
+    id                 String                   @id @default(uuid()) @db.Uuid
+    verificationId     String                   @map("verification_id") @db.Uuid
+    action             VerificationActivityType @map("action")
+    performedByAdminId String?                  @map("performed_by_admin_id") @db.Uuid
 
     notes    String?
     metadata Json?
 
     createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-    verification Verification             @relation(fields: [verificationId], references: [id])
-    admin        Admin?                   @relation(fields: [performedByAdminId], references: [id])
-    action       VerificationActivityType @relation(fields: [actionCode], references: [code])
+    verification Verification @relation(fields: [verificationId], references: [id])
+    admin        Admin?       @relation(fields: [performedByAdminId], references: [id])
 
     @@index([verificationId])
     @@map("verification_activities")

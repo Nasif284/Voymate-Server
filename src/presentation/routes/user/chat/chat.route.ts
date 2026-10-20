@@ -22,18 +22,6 @@ export function buildChatRoutes(
   );
 
   router.get(
-    '/group/:groupId',
-    auth.authenticate,
-    asyncHandler(controller.getGroupChat),
-  );
-
-  // router.post(
-  //   '/:conversationId/messages',
-  //   auth.authenticate,
-  //   asyncHandler(controller.sendMessage),
-  // );
-
-  router.get(
     '/:conversationId/messages',
     auth.authenticate,
     asyncHandler(controller.getMessages),

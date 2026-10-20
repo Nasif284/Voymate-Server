@@ -56,7 +56,7 @@ export interface UserProps {
   emailVerifiedAt: Date | null;
   idVerifiedAt: Date | null;
   createdAt: Date;
-  updatedAt: Date;
+  updatedAt: Date | null;
   deletedAt: Date | null;
   privacy?: UserPrivacy;
   location?: UserLocation;

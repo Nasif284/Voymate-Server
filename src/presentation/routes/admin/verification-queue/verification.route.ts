@@ -3,6 +3,8 @@ import { VerificationQueueController } from '../../../controllers/admin/verifica
 import { AdminAuthMiddleware } from '../../../middleware/user/auth/adminAuthMiddleware';
 import { asyncHandler } from '../../../middleware/error/asyncHandler';
 
+import { AdminRoleType } from '../../../../domain/enums/admin-role.enum';
+
 export function buildVerificationsRoute(
   controller: VerificationQueueController,
   adminAuth: AdminAuthMiddleware,
@@ -21,16 +23,19 @@ export function buildVerificationsRoute(
   router.post(
     '/:id/approve',
     adminAuth.authenticate,
+    adminAuth.authorize(AdminRoleType.SUPER_ADMIN, AdminRoleType.MODERATOR),
     asyncHandler(controller.approveVerification),
   );
   router.post(
     '/:id/reject',
     adminAuth.authenticate,
+    adminAuth.authorize(AdminRoleType.SUPER_ADMIN, AdminRoleType.MODERATOR),
     asyncHandler(controller.rejectVerification),
   );
   router.post(
     '/:id/resubmission',
     adminAuth.authenticate,
+    adminAuth.authorize(AdminRoleType.SUPER_ADMIN, AdminRoleType.MODERATOR),
     asyncHandler(controller.requestResubmission),
   );
   return router;

@@ -5,6 +5,8 @@ import { validate } from '../../../validators/user/auth';
 import { ChangeStatusSchema } from '../../../validators/user-management/change-status.validator';
 import { AdminAuthMiddleware } from '../../../middleware/user/auth/adminAuthMiddleware';
 
+import { AdminRoleType } from '../../../../domain/enums/admin-role.enum';
+
 export function buildUserManagementRoutes(
   controller: UserManagementController,
   adminAuth: AdminAuthMiddleware,
@@ -15,15 +17,11 @@ export function buildUserManagementRoutes(
     adminAuth.authenticate,
     asyncHandler(controller.getUserProfile),
   );
-  router.get(
-    '/:id/groups',
-    adminAuth.authenticate,
-    asyncHandler(controller.getUserGroups),
-  );
   router.get('/', adminAuth.authenticate, asyncHandler(controller.getAllUsers));
   router.patch(
     '/status',
     adminAuth.authenticate,
+    adminAuth.authorize(AdminRoleType.SUPER_ADMIN, AdminRoleType.MODERATOR),
     validate(ChangeStatusSchema),
     asyncHandler(controller.changeUserStatus),
   );

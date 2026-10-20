@@ -6,9 +6,9 @@ model Trip {
     dateFrom DateTime @map("date_from") @db.Date
     dateTo   DateTime @map("date_to") @db.Date
 
-    budgetStyleCode String @map("budget_style_code") @db.VarChar(20)
-    travelStyleCode String @map("travel_style_code") @db.VarChar(20)
-    statusCode      String @default("upcoming") @map("status_code") @db.VarChar(20)
+    budgetStyle BudgetStyle @map("budget_style")
+    travelStyle TripStyle   @map("travel_style")
+    status      TripStatus  @default(UPCOMING) @map("status")
 
     createdBy String @map("created_by") @db.Uuid
 
@@ -16,92 +16,37 @@ model Trip {
     updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
     deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
 
-    destination Destination  @relation(fields: [destinationId], references: [id])
-    creator     User         @relation("TripCreator", fields: [createdBy], references: [id])
-    travelStyle TripStyle?   @relation(fields: [travelStyleCode], references: [code])
-    budgetStyle BudgetStyle? @relation(fields: [budgetStyleCode], references: [code])
-    status      TripStatus   @relation(fields: [statusCode], references: [code])
+    destination Destination @relation(fields: [destinationId], references: [id])
+    creator     User        @relation("TripCreator", fields: [createdBy], references: [id])
 
-    group      TripGroup?
     sourceTrip TripMatch[] @relation("TripMatchA")
     targetTrip TripMatch[] @relation("TripMatchB")
 
     @@index([destinationId])
     @@index([createdBy])
-    @@index([statusCode])
+    @@index([status])
     @@index([deletedAt])
     @@map("trips")
 }
 
-model TripGroup {
-    id         String   @id @default(uuid()) @db.Uuid
-    tripId     String   @unique @map("trip_id") @db.Uuid
-    inviteCode String   @unique @map("invite_code") @db.VarChar(20)
-    createdBy  String   @map("created_by") @db.Uuid
-    createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-
-    trip  Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
-    owner User @relation("TripGroupOwner", fields: [createdBy], references: [id])
-
-    members            TripGroupMember[]
-    invites            TripGroupInvite[]
-    checklistItems     ChecklistItem[]
-    expenses           Expense[]
-    expenseSettlements ExpenseSettlement[]
-    itineraryDays      ItineraryDay[]
-    chatConversation   ChatConversation?
-    calls              Call[]              @relation("TripGroupCalls")
-
-    @@index([createdBy])
-    @@map("trip_groups")
-}
-
 model Destination {
-    id          String   @id @default(uuid()) @db.Uuid
-    placeId     String   @unique @map("place_id") @db.VarChar(255)
-    name        String   @db.VarChar(255)
-    city        String?  @db.VarChar(255)
-    state       String?  @db.VarChar(255)
-    countryCode String   @map("country_code") @db.VarChar(10)
-    latitude    Decimal  @db.Decimal(10, 8)
-    longitude   Decimal  @db.Decimal(11, 8)
-    createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-    country     Country  @relation(fields: [countryCode], references: [code])
+    id          String      @id @default(uuid()) @db.Uuid
+    placeId     String      @unique @map("place_id") @db.VarChar(255)
+    name        String      @db.VarChar(255)
+    city        String?     @db.VarChar(255)
+    state       String?     @db.VarChar(255)
+    countryCode String      @map("country_code") @db.VarChar(10)
+    latitude    Decimal     @db.Decimal(10, 8)
+    longitude   Decimal     @db.Decimal(11, 8)
+    createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+    country     Country     @relation(fields: [countryCode], references: [code])
     trips       Trip[]
-    coverUrl    String?  @map("cover_url") @db.VarChar(500)
+    coverUrl    String?     @map("cover_url") @db.VarChar(500)
 
     @@index([placeId])
     @@index([countryCode])
     @@index([state])
     @@map("destinations")
-}
-
-model TripGroupMember {
-    id       String    @id @default(uuid()) @db.Uuid
-    groupId  String    @map("group_id") @db.Uuid
-    userId   String    @map("user_id") @db.Uuid
-    roleCode String    @default("member") @map("role_code") @db.VarChar(20)
-    addedBy  String?   @map("added_by") @db.Uuid
-    joinedAt DateTime  @default(now()) @map("joined_at") @db.Timestamptz(6)
-    leftAt   DateTime? @map("left_at") @db.Timestamptz(6)
-    isActive Boolean   @default(true) @map("is_active")
-
-    group               TripGroup           @relation(fields: [groupId], references: [id], onDelete: Cascade)
-    user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-    role                TripMemberRole      @relation(fields: [roleCode], references: [code])
-    assignedTasks       ChecklistItem[]     @relation("ChecklistAssignedMember")
-    paidExpenses        Expense[]           @relation("ExpensePaidBy")
-    expenseShares       ExpenseShare[]
-    paidShares          ExpenseShare[]      @relation("SharePaidBy")
-    settlementsPaid     ExpenseSettlement[] @relation("SettlementPayer")
-    settlementsReceived ExpenseSettlement[] @relation("SettlementReceiver")
-    createdActivities   ItineraryActivity[]
-    createdDays         ItineraryDay[]
-
-    @@unique([groupId, userId])
-    @@index([groupId])
-    @@index([userId])
-    @@map("trip_members")
 }
 
 model TripMatch {
@@ -131,24 +76,4 @@ model TripMatch {
 
     @@unique([tripAId, tripBId])
     @@map("trip_matches")
-}
-
-model TripGroupInvite {
-    id               String    @id @default(uuid()) @db.Uuid
-    groupId          String    @map("group_id") @db.Uuid
-    invitedBy        String    @map("invited_by") @db.Uuid
-    invitedUserEmail String?   @map("invited_user_email")
-    message          String?
-    statusCode       String    @default("pending") @map("status_code") @db.VarChar(20)
-    expiresAt        DateTime? @map("expires_at") @db.Timestamptz(6)
-    respondedAt      DateTime? @map("responded_at") @db.Timestamptz(6)
-    createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-
-    group   TripGroup        @relation(fields: [groupId], references: [id], onDelete: Cascade)
-    inviter User             @relation("TripGroupInviter", fields: [invitedBy], references: [id])
-    status  TripInviteStatus @relation(fields: [statusCode], references: [code])
-
-    @@index([groupId])
-    @@index([invitedUserEmail])
-    @@map("trip_group_invites")
 }

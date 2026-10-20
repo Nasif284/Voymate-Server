@@ -1,0 +1,140 @@
+enum Gender {
+  MALE
+  FEMALE
+  NON_BINARY
+}
+
+enum TravelType {
+  BUDGET
+  BACKPACKER
+  LUXURY
+}
+
+enum TravelPersonality {
+  INTROVERT
+  AMBIVERT
+  EXTROVERT
+}
+
+enum MatchPreference {
+  MEN
+  WOMEN
+  EVERYONE
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+  DEACTIVATED
+}
+
+enum OnlineStatus {
+  ONLINE
+  OFFLINE
+  AWAY
+}
+
+enum ProfileVisibility {
+  EVERYONE
+  VERIFIED_ONLY
+  CONNECTED_ONLY
+}
+
+enum RequestFromOption {
+  EVERYONE
+  VERIFIED_ONLY
+  NOBODY
+}
+
+enum OnboardingSource {
+  FRIENDS_FAMILY
+  SOCIAL_MEDIA
+  SEARCH_ENGINE
+  TRAVEL_BLOG
+  APP_STORE
+  OTHER
+}
+
+enum TripStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum TripStyle {
+  ADVENTURE
+  LEISURE
+  CULTURAL
+}
+
+enum BudgetStyle {
+  BUDGET
+  MODERATE
+  PREMIUM
+  LUXURY
+}
+
+enum ConnectionRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+}
+
+enum VerificationStatus {
+  PROCESSING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  RESUBMISSION_REQUIRED
+}
+
+enum VerificationDocumentType {
+  PASSPORT
+  NATIONAL_ID
+  DRIVERS_LICENSE
+}
+
+enum VerificationDocumentSide {
+  FRONT
+  BACK
+}
+
+enum VerificationActivityType {
+  SUBMITTED
+  OCR_COMPLETED
+  REVIEW_STARTED
+  APPROVED
+  REJECTED
+  RESUBMISSION_REQUESTED
+  NOTE_ADDED
+  ASSIGNED
+}
+
+enum CommunityTripCategory {
+  CAMP
+  TREK_EXPEDITION
+  ROADTRIP
+  TRIP
+}
+
+enum CommunityTripPricingType {
+  FREE
+  PAID
+}
+
+enum CommunityTripStatus {
+  DRAFT
+  PUBLISHED
+  COMPLETED
+  CANCELLED
+}
+
+enum CommunityVerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}

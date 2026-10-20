@@ -27,4 +27,8 @@ export interface GetUserProfileResponseDTO {
   matchWith: string;
   tripCount: number;
   connectionsCount: number;
+  match?: {
+    totalPoints: number;
+    reasons: string[];
+  } | null;
 }

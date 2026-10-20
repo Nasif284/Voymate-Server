@@ -25,17 +25,16 @@ import { registerLocationDependency } from './client-side/user/location.dependen
 import { GoogleGeocodingService } from '../services/geocode.service';
 import { registerUserDependency } from './client-side/user/user.dependency';
 import { TripRepository } from '../database/repositories/trip.repository';
-import { TripGroupRepository } from '../database/repositories/trip-group.repository';
-import { GroupMemberRepository } from '../database/repositories/group-member.repository';
 import { ImageService } from '../services/image.service';
 import { registerTripDependency } from './client-side/trip/trip.dependency';
 import { registerConnectionDependency } from './client-side/user/connection.dependency';
 import { registerProfileDependency } from './client-side/user/porfile.dependency';
-import { ChecklistRepository } from '../database/repositories/checklist.repository';
-import { registerChecklistDependency } from './client-side/checklsit/checklist.dependency';
-import { ExpenseRepository } from '../database/repositories/expense.repository';
-import { registerExpenseDependency } from './client-side/expense/dependency';
-import { OpenMeteoWeatherService } from '../services/open-mateo-weather.service';
+import { registerCommunityDependencies } from './client-side/community/community.dependency';
+import { CommunityRepository } from '../database/repositories/community.repository';
+import { CommunityTripRepository } from '../database/repositories/community-trip.repository';
+import { CommunityBookingRepository } from '../database/repositories/community-booking.repository';
+import { RazorpayPaymentService } from '../services/razorpay.service';
+import { CommunityAuthMiddleware } from '../../presentation/middleware/user/auth/communityAuth.middleware';
 import { TwilioSmsService } from '../services/sms-service.service';
 import { RedisPhoneOtpService } from '../services/phone-otp.service';
 import { RedisCacheService } from '../services/redis-cache.service';
@@ -52,15 +51,10 @@ import { GoogleDocumentAiService } from '../services/google-ocr.service';
 import { IDocumentExtractionService } from '../../application/interfaces/services/document-extraction.service.interface';
 import { DocumentExtractionService } from '../services/document-extraction.service';
 import { RuleBasedDocumentAnalysisService } from '../services/DocumentAnalysis.service';
-import { IItineraryRepository } from '../../application/interfaces/repositories/itenary.repository';
-import { ItineraryRepository } from '../database/repositories/itenary.repository';
-import { registerItineraryDependencies } from './client-side/itenerary/dependency';
 import { IAIModelService } from '../../application/interfaces/services/ai-model.service.interface';
 import { OpenRouterAIModelService } from '../services/open-router-ai-model.service';
 import { IPlacesService } from '../../application/interfaces/services/places.service.interface';
 import { GooglePlacesService } from '../services/google-places.service';
-import { IAiItineraryService } from '../../application/interfaces/services/ai-itinerary.service.interface';
-import { AiItineraryService } from '../services/ai-itinerary.service';
 import { GooglePlacesClient } from '../services/google-places-client.service';
 import { IAssistantRepository } from '../../application/interfaces/repositories/ai-assistant.repository';
 import { AssistantRepository } from '../database/repositories/ai-assistant.repository';
@@ -117,10 +111,6 @@ export function registerDependencies(
     GoogleGeocodingService,
   );
   container.registerSingleton<ImageService>(TOKENS.IImageService, ImageService);
-  container.registerSingleton<OpenMeteoWeatherService>(
-    TOKENS.IWeatherService,
-    OpenMeteoWeatherService,
-  );
   container.registerSingleton<TwilioSmsService>(
     TOKENS.ISmsService,
     TwilioSmsService,
@@ -157,10 +147,6 @@ export function registerDependencies(
     TOKENS.IPlacesService,
     GooglePlacesService,
   );
-  container.registerSingleton<IAiItineraryService>(
-    TOKENS.IAiItineraryService,
-    AiItineraryService,
-  );
   container.registerSingleton(TOKENS.GooglePlacesClient, GooglePlacesClient);
   container.registerSingleton<ICallNotificationService>(
     TOKENS.ICallNotificationService,
@@ -173,6 +159,11 @@ export function registerDependencies(
   container.registerSingleton<IPresenceService>(
     TOKENS.IPresenceService,
     PresenceService,
+  );
+
+  container.registerSingleton<RazorpayPaymentService>(
+    TOKENS.IRazorpayPaymentService,
+    RazorpayPaymentService,
   );
 
   container.registerSingleton<UserRepository>(
@@ -191,29 +182,9 @@ export function registerDependencies(
     TOKENS.ITripRepository,
     TripRepository,
   );
-  container.registerSingleton<TripGroupRepository>(
-    TOKENS.ITripGroupRepository,
-    TripGroupRepository,
-  );
-  container.registerSingleton<GroupMemberRepository>(
-    TOKENS.IGroupMemberRepository,
-    GroupMemberRepository,
-  );
-  container.registerSingleton<ChecklistRepository>(
-    TOKENS.IChecklistRepository,
-    ChecklistRepository,
-  );
-  container.registerSingleton<ExpenseRepository>(
-    TOKENS.IExpenseRepository,
-    ExpenseRepository,
-  );
   container.registerSingleton<VerificationRepository>(
     TOKENS.IVerificationRepository,
     VerificationRepository,
-  );
-  container.registerSingleton<IItineraryRepository>(
-    TOKENS.IItineraryRepository,
-    ItineraryRepository,
   );
   container.registerSingleton<IAssistantRepository>(
     TOKENS.IAssistantRepository,
@@ -231,6 +202,18 @@ export function registerDependencies(
     TOKENS.IAdminAnalyticsRepository,
     AdminAnalyticsRepository,
   );
+  container.registerSingleton<CommunityRepository>(
+    TOKENS.ICommunityRepository,
+    CommunityRepository,
+  );
+  container.registerSingleton<CommunityTripRepository>(
+    TOKENS.ICommunityTripRepository,
+    CommunityTripRepository,
+  );
+  container.registerSingleton<CommunityBookingRepository>(
+    TOKENS.ICommunityBookingRepository,
+    CommunityBookingRepository,
+  );
 
   container.registerSingleton<AdminAuthMiddleware>(
     TOKENS.AdminAuthenticationMiddleware,
@@ -239,6 +222,10 @@ export function registerDependencies(
   container.registerSingleton<UserAuthMiddleware>(
     TOKENS.UserAuthMiddleware,
     UserAuthMiddleware,
+  );
+  container.registerSingleton<CommunityAuthMiddleware>(
+    TOKENS.CommunityAuthMiddleware,
+    CommunityAuthMiddleware,
   );
 
   // admin use-cases injection
@@ -257,10 +244,8 @@ export function registerDependencies(
   registerTripDependency();
   registerConnectionDependency();
   registerProfileDependency();
-  registerChecklistDependency();
-  registerExpenseDependency();
-  registerItineraryDependencies();
   registerAiAssistantDependency();
   registerChatsDependency();
   registerCallDependency();
+  registerCommunityDependencies();
 }

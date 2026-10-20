@@ -4,6 +4,7 @@ import { TOKENS } from '../../../infrastructure/di/tokens';
 import { IUserRepository } from '../../interfaces/repositories/user.reposetory';
 import { GetUserProfileResponseDTO } from '../../dtos/users/response/user-profile.dto';
 import { IStorageService } from '../../interfaces/services/storage.service.interface';
+
 @injectable()
 export class GetUserProfile implements IGetUserProfile {
   constructor(
@@ -12,8 +13,13 @@ export class GetUserProfile implements IGetUserProfile {
     @inject(TOKENS.IStorageService)
     private readonly _storageService: IStorageService,
   ) {}
-  async execute(dto: { userId: string }): Promise<GetUserProfileResponseDTO> {
+
+  async execute(dto: {
+    userId: string;
+    currentUserId?: string;
+  }): Promise<GetUserProfileResponseDTO> {
     const user = await this._userRepository.getUserWithDetails(dto.userId);
+
     return {
       ...user,
       avatarUrl: user.avatarUrl
@@ -22,6 +28,7 @@ export class GetUserProfile implements IGetUserProfile {
       coverUrl: user.coverUrl
         ? await this._storageService.getSignedUrl(user.coverUrl)
         : null,
+      match: null,
     };
   }
 }

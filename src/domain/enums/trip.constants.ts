@@ -1,19 +1,19 @@
 export enum TripStatus {
-  UPCOMING = 'upcoming',
-  ONGOING = 'ongoing',
-  COMPLETED = 'completed',
-  CANCELLED = 'cancelled',
+  UPCOMING = 'UPCOMING',
+  ACTIVE = 'ACTIVE',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
 }
 
-export enum TripMemberRole {
-  ADMIN = 'admin',
-  MEMBER = 'member',
+export enum TripStyle {
+  ADVENTURE = 'ADVENTURE',
+  LEISURE = 'LEISURE',
+  CULTURAL = 'CULTURAL',
 }
 
-export enum TripInviteStatus {
-  PENDING = 'pending',
-  ACCEPTED = 'accepted',
-  REJECTED = 'rejected',
-  EXPIRED = 'expired',
-  CANCELLED = 'cancelled',
+export enum BudgetStyle {
+  BUDGET = 'BUDGET',
+  MODERATE = 'MODERATE',
+  PREMIUM = 'PREMIUM',
+  LUXURY = 'LUXURY',
 }

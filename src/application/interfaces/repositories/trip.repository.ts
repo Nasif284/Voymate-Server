@@ -1,3 +1,4 @@
+import { BuddyUpcomingTripDTO } from '../../dtos/trip/responce/get-buddies-upcoming-trips.dto';
 import { CreateTripDataDTO } from '../../dtos/trip/request/create-trip.dto';
 import {
   CreateDestinationRequestDTO,
@@ -12,9 +13,6 @@ import { GetActiveTripResponseDTO } from '../../dtos/trip/responce/get-active-tr
 import { GetMatchProfileResponseDTO } from '../../dtos/trip/responce/get-match-profile.dto';
 import { TripMatchResponseDTO } from '../../dtos/trip/responce/get-matches.dto';
 import { GetUserTripsResponseDTO } from '../../dtos/trip/responce/get-user-trips.dto';
-import { TripDestination } from '../../dtos/trip/responce/get-weather.dto';
-
-export { GroupTripForAI } from './trip-group.repository';
 
 export interface ITripRepository {
   findDestinationByPlaceId(placeId: string): Promise<Destination | null>;
@@ -46,5 +44,71 @@ export interface ITripRepository {
     userId: string;
   }): Promise<GetUserTripsResponseDTO>;
   editTrip(tripId: string, payload: EditTripData): Promise<void>;
-  getTripDestination(tripGroupId: string): Promise<TripDestination | null>;
+  getDetailedTrip(tripId: string): Promise<CandidateTripDetail | null>;
+  getCandidateTripsForMatching(
+    tripId: string | null | undefined,
+    userId: string,
+    filterCriteria?: CandidateTripFilterCriteria,
+  ): Promise<CandidateTripDetail[]>;
+  getUserDetailedUpcomingTrips(userId: string): Promise<CandidateTripDetail[]>;
+  getBuddiesUpcomingTrips(userId: string): Promise<BuddyUpcomingTripDTO[]>;
+}
+
+export interface TargetTripCriteria {
+  dateFrom: Date;
+  dateTo: Date;
+  destinationId?: string;
+  destinationCountryCode?: string | null;
+  destinationState?: string | null;
+}
+
+export interface CandidateTripFilterCriteria {
+  targetTrips?: TargetTripCriteria[];
+  destinationName?: string;
+  city?: string;
+  state?: string;
+  countryCode?: string;
+  dateFrom?: Date;
+  dateTo?: Date;
+  travelStyle?: string;
+  budgetStyle?: string;
+  limit?: number;
+}
+
+export interface CandidateTripDetail {
+  id: string;
+  name: string;
+  destinationId: string;
+  destinationName: string;
+  destinationCity: string | null;
+  destinationState: string | null;
+  destinationCountryCode: string;
+  destinationCountryName: string | null;
+  destinationLat: number;
+  destinationLng: number;
+  coverUrl: string | null;
+  dateFrom: Date;
+  dateTo: Date;
+  budgetStyle: string;
+  travelStyle: string;
+  connectionStatus: 'CONNECTED' | 'REQUEST_SENT' | 'REQUEST_RECEIVED' | 'NONE';
+  requestId?: string;
+  creator: {
+    id: string;
+    fullName: string;
+    avatarUrl: string | null;
+    coverUrl: string | null;
+    bio: string | null;
+    dateOfBirth: Date | null;
+    city: string | null;
+    state: string | null;
+    country: string | null;
+    countryCode: string | null;
+    travelPersonality: string | null;
+    travelType: string | null;
+    interests: string[];
+    languages: string[];
+    skills: string[];
+    createdAt: Date;
+  };
 }

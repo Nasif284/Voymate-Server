@@ -1,11 +1,12 @@
 import { z } from 'zod';
+
 export const onboardingSourceSchema = z.object({
   source: z.enum([
-    'Friends or Family',
-    'Social Media',
-    'Travel Blog or Article',
-    'Search Engine',
-    'App Store',
-    'other',
+    'FRIENDS_FAMILY',
+    'SOCIAL_MEDIA',
+    'SEARCH_ENGINE',
+    'TRAVEL_BLOG',
+    'APP_STORE',
+    'OTHER',
   ]),
 });

@@ -5,3 +5,5 @@ RUN apt-get update \
     postgresql-15-postgis-3 \
     postgresql-15-postgis-3-scripts \
     && rm -rf /var/lib/apt/lists/*
+
+COPY init-extensions.sql /docker-entrypoint-initdb.d/

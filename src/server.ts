@@ -51,7 +51,7 @@ async function bootstrap(): Promise<void> {
   registerChatSocket(io);
   registerCallSocket(io);
   httpServer.listen(PORT, () => {
-    console.log(`[Server] Travel Buddy API running on port ${PORT}`);
+    console.log(`[Server] Voymate API running on port ${PORT}`);
     console.log(`[Server] Environment: ${process.env.NODE_ENV}`);
   });
 

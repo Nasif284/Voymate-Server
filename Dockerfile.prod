@@ -59,6 +59,9 @@ COPY --from=builder /app/dist ./dist
 
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder /app/src/infrastructure/database/schema ./src/infrastructure/database/schema
+COPY --from=builder /app/src/infrastructure/database/migrations ./src/infrastructure/database/migrations
 
 EXPOSE 5000
 

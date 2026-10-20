@@ -1,57 +1,58 @@
 export enum AccountStatus {
-  ACTIVE = 'active',
-  SUSPENDED = 'suspended',
-  BANNED = 'banned',
-  DEACTIVATED = 'deactivated',
+  ACTIVE = 'ACTIVE',
+  SUSPENDED = 'SUSPENDED',
+  BANNED = 'BANNED',
+  DEACTIVATED = 'DEACTIVATED',
 }
 export enum OnlineStatus {
-  ONLINE = 'online',
-  OFFLINE = 'offline',
+  ONLINE = 'ONLINE',
+  OFFLINE = 'OFFLINE',
+  AWAY = 'AWAY',
 }
 
 export enum Gender {
-  MALE = 'male',
-  FEMALE = 'female',
-  NON_BINARY = 'non_binary',
+  MALE = 'MALE',
+  FEMALE = 'FEMALE',
+  NON_BINARY = 'NON_BINARY',
 }
 
 export enum TravelType {
-  BUDGET = 'budget',
-  BACKPACKER = 'backpacker',
-  LUXURY = 'luxury',
+  BUDGET = 'BUDGET',
+  BACKPACKER = 'BACKPACKER',
+  LUXURY = 'LUXURY',
 }
 
 export enum TravelPersonality {
-  INTROVERT = 'introvert',
-  AMBIVERT = 'ambivert',
-  EXTROVERT = 'extrovert',
+  INTROVERT = 'INTROVERT',
+  AMBIVERT = 'AMBIVERT',
+  EXTROVERT = 'EXTROVERT',
 }
 
 export enum MatchPreference {
-  MEN = 'men',
-  WOMEN = 'women',
-  EVERYONE = 'everyone',
+  MEN = 'MEN',
+  WOMEN = 'WOMEN',
+  EVERYONE = 'EVERYONE',
 }
 
 export enum ProfileVisibility {
-  EVERYONE = 'everyone',
-  VERIFIED_ONLY = 'verified_only',
-  CONNECTED_ONLY = 'connected_only',
+  EVERYONE = 'EVERYONE',
+  VERIFIED_ONLY = 'VERIFIED_ONLY',
+  CONNECTED_ONLY = 'CONNECTED_ONLY',
 }
 
 export enum RequestFromOption {
-  EVERYONE = 'everyone',
-  VERIFIED_ONLY = 'verified_only',
-  NOBODY = 'nobody',
+  EVERYONE = 'EVERYONE',
+  VERIFIED_ONLY = 'VERIFIED_ONLY',
+  NOBODY = 'NOBODY',
 }
 
 export enum OnboardingSource {
-  FRIENDS_OR_FAMILY = 'Friends or Family',
-  SOCIAL_MEDIA = 'Social Media',
-  SEARCH_ENGINE = 'Search Engine',
-  TRAVEL_BLOG_OR_ARTICLE = 'Travel Blog or Article',
-  APP_STORE = 'App Store',
-  OTHER = 'other',
+  FRIENDS_FAMILY = 'FRIENDS_FAMILY',
+  SOCIAL_MEDIA = 'SOCIAL_MEDIA',
+  SEARCH_ENGINE = 'SEARCH_ENGINE',
+  TRAVEL_BLOG = 'TRAVEL_BLOG',
+  APP_STORE = 'APP_STORE',
+  OTHER = 'OTHER',
 }
 
 export type OtpPurpose = 'phone_verify' | 'password_reset' | 'email_verify';

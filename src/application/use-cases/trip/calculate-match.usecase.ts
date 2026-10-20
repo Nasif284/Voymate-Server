@@ -67,119 +67,119 @@ export class CalculateMatch implements ICalculateMatch {
         reasons.push(`Trip dates overlap for ${Math.round(overlapDays)} days`);
       }
 
-      type TravelStyleCode = 'adventure' | 'cultural' | 'leisure';
+      type TravelStyleCode = 'ADVENTURE' | 'CULTURAL' | 'LEISURE';
       type TravelStyles = {
-        adventure: number;
-        cultural: number;
-        leisure: number;
+        ADVENTURE: number;
+        CULTURAL: number;
+        LEISURE: number;
       };
       const styleMatrix: Record<TravelStyleCode, TravelStyles> = {
-        adventure: {
-          adventure: 10,
-          cultural: 6,
-          leisure: 3,
+        ADVENTURE: {
+          ADVENTURE: 10,
+          CULTURAL: 6,
+          LEISURE: 3,
         },
-        cultural: {
-          adventure: 6,
-          cultural: 10,
-          leisure: 6,
+        CULTURAL: {
+          ADVENTURE: 6,
+          CULTURAL: 10,
+          LEISURE: 6,
         },
-        leisure: {
-          adventure: 3,
-          cultural: 6,
-          leisure: 10,
+        LEISURE: {
+          ADVENTURE: 3,
+          CULTURAL: 6,
+          LEISURE: 10,
         },
       };
 
-      const travelStyleScore =
-        styleMatrix[sourceTrip.travelStyleCode as TravelStyleCode]?.[
-          targetTrip.travelStyleCode as TravelStyleCode
-        ] ?? 0;
+      const sourceStyle = (sourceTrip.travelStyleCode?.toUpperCase() ??
+        '') as TravelStyleCode;
+      const targetStyle = (targetTrip.travelStyleCode?.toUpperCase() ??
+        '') as TravelStyleCode;
+      const travelStyleScore = styleMatrix[sourceStyle]?.[targetStyle] ?? 0;
 
       if (travelStyleScore >= 8) {
         reasons.push(`Both prefer ${sourceTrip.travelStyleCode} travel`);
       }
 
-      type BudgetStyleCode = 'budget' | 'moderate' | 'premium' | 'luxury';
+      type BudgetStyleCode = 'BUDGET' | 'MODERATE' | 'PREMIUM' | 'LUXURY';
       type BudgetStyles = {
-        budget: number;
-        moderate: number;
-        premium: number;
-        luxury: number;
+        BUDGET: number;
+        MODERATE: number;
+        PREMIUM: number;
+        LUXURY: number;
       };
       const budgetMatrix: Record<BudgetStyleCode, BudgetStyles> = {
-        budget: {
-          budget: 10,
-          moderate: 8,
-          premium: 4,
-          luxury: 0,
+        BUDGET: {
+          BUDGET: 10,
+          MODERATE: 8,
+          PREMIUM: 4,
+          LUXURY: 0,
         },
 
-        moderate: {
-          budget: 8,
-          moderate: 10,
-          premium: 8,
-          luxury: 4,
+        MODERATE: {
+          BUDGET: 8,
+          MODERATE: 10,
+          PREMIUM: 8,
+          LUXURY: 4,
         },
 
-        premium: {
-          budget: 4,
-          moderate: 8,
-          premium: 10,
-          luxury: 8,
+        PREMIUM: {
+          BUDGET: 4,
+          MODERATE: 8,
+          PREMIUM: 10,
+          LUXURY: 8,
         },
 
-        luxury: {
-          budget: 0,
-          moderate: 4,
-          premium: 8,
-          luxury: 10,
+        LUXURY: {
+          BUDGET: 0,
+          MODERATE: 4,
+          PREMIUM: 8,
+          LUXURY: 10,
         },
       };
 
-      const budgetScore =
-        budgetMatrix[sourceTrip.budgetStyleCode as BudgetStyleCode]?.[
-          targetTrip.budgetStyleCode as BudgetStyleCode
-        ] ?? 0;
+      const sourceBudget = (sourceTrip.budgetStyleCode?.toUpperCase() ??
+        '') as BudgetStyleCode;
+      const targetBudget = (targetTrip.budgetStyleCode?.toUpperCase() ??
+        '') as BudgetStyleCode;
+      const budgetScore = budgetMatrix[sourceBudget]?.[targetBudget] ?? 0;
 
-      // if (budgetScore == 10) {
-      //   reasons.push(
-      //     `Both prefer ${sourceTrip.budgetStyleCode} as budget style`,
-      //   );
-      // }
-
-      type PersonalityCode = 'introvert' | 'ambivert' | 'extrovert';
+      type PersonalityCode = 'INTROVERT' | 'AMBIVERT' | 'EXTROVERT';
 
       type Personalities = {
-        introvert: number;
-        ambivert: number;
-        extrovert: number;
+        INTROVERT: number;
+        AMBIVERT: number;
+        EXTROVERT: number;
       };
 
       const personalityMatrix: Record<PersonalityCode, Personalities> = {
-        introvert: {
-          introvert: 15,
-          ambivert: 10,
-          extrovert: 5,
+        INTROVERT: {
+          INTROVERT: 15,
+          AMBIVERT: 10,
+          EXTROVERT: 5,
         },
 
-        ambivert: {
-          introvert: 10,
-          ambivert: 15,
-          extrovert: 10,
+        AMBIVERT: {
+          INTROVERT: 10,
+          AMBIVERT: 15,
+          EXTROVERT: 10,
         },
 
-        extrovert: {
-          introvert: 5,
-          ambivert: 10,
-          extrovert: 15,
+        EXTROVERT: {
+          INTROVERT: 5,
+          AMBIVERT: 10,
+          EXTROVERT: 15,
         },
       };
 
+      const sourcePersonality =
+        (sourceTrip.creator.travelPersonalityCode?.toUpperCase() ??
+          '') as PersonalityCode;
+      const targetPersonality =
+        (targetTrip.creator.travelPersonalityCode?.toUpperCase() ??
+          '') as PersonalityCode;
       const personalityScore =
-        personalityMatrix[
-          sourceTrip.creator.travelPersonalityCode as PersonalityCode
-        ]?.[targetTrip.creator.travelPersonalityCode as PersonalityCode] ?? 0;
+        personalityMatrix[sourcePersonality]?.[targetPersonality] ?? 0;
 
       const sourceInterests = sourceTrip.creator.interests.map(
         (i) => i.interestCode,

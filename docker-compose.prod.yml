@@ -79,8 +79,7 @@
 
 services:
   api:
-    build:
-      image: 090413359387.dkr.ecr.ap-south-1.amazonaws.com/travel-buddy-api:${IMAGE_TAG:-latest}
+    image: 592193419505.dkr.ecr.ap-southeast-2.amazonaws.com/voymate-server:latest
     ports:
       - '5000:5000'
     environment:

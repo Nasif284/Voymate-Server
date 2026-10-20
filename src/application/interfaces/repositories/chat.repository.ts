@@ -51,22 +51,14 @@ export interface IChatRepository {
     otherUserId: string,
   ): Promise<string>;
 
-  getOrCreateGroupConversation(groupId: string): Promise<string>;
-
   getConversation(conversationId: string): Promise<{
     id: string;
     type: string;
     userAId: string | null;
     userBId: string | null;
-    groupId: string | null;
   } | null>;
 
   isDirectConversationMember(
-    conversationId: string,
-    userId: string,
-  ): Promise<boolean>;
-
-  isGroupConversationMember(
     conversationId: string,
     userId: string,
   ): Promise<boolean>;

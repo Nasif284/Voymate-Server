@@ -1,5 +1,5 @@
 export type CallMediaType = 'AUDIO' | 'VIDEO';
-export type CallScope = 'DIRECT' | 'TRIP_GROUP';
+export type CallScope = 'DIRECT';
 export type CallStatus = 'RINGING' | 'ACTIVE' | 'ENDED' | 'CANCELLED';
 export type CallParticipantStatus =
   | 'INVITED'
@@ -28,9 +28,6 @@ export interface CallDTO {
 
   callerId: string;
   recipientId: string | null;
-  tripGroupId: string | null;
-  groupName?: string;
-  groupCoverUrl?: string;
 
   startedAt: Date | null;
   endedAt: Date | null;

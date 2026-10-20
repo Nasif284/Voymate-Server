@@ -24,22 +24,16 @@ model User {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
 
-  genderCode            String? @map("gender_code") @db.VarChar(30)
-  travelTypeCode        String? @map("travel_type_code") @db.VarChar(20)
-  travelPersonalityCode String? @map("travel_personality_code") @db.VarChar(20)
-  matchWithCode         String? @default("everyone") @map("match_with_code") @db.VarChar(20)
-  accountStatusCode     String  @default("active") @map("account_status_code") @db.VarChar(20)
+  gender            Gender?            @map("gender")
+  travelType        TravelType?        @map("travel_type")
+  travelPersonality TravelPersonality? @map("travel_personality")
+  matchPreference   MatchPreference?   @default(EVERYONE) @map("match_preference")
+  accountStatus     AccountStatus      @default(ACTIVE) @map("account_status")
 
-  countryCode String? @map("country_code") @db.VarChar(10)
-  state       String? @map("origin_region") @db.VarChar(100)
-  city        String? @map("origin_city") @db.VarChar(100)
-
-  gender            Gender?            @relation(fields: [genderCode], references: [code])
-  travelType        TravelType?        @relation(fields: [travelTypeCode], references: [code])
-  travelPersonality TravelPersonality? @relation(fields: [travelPersonalityCode], references: [code])
-  matchPreference   MatchPreference?   @relation(fields: [matchWithCode], references: [code])
-  accountStatus     AccountStatus      @relation(fields: [accountStatusCode], references: [code])
-  country           Country?           @relation(fields: [countryCode], references: [code])
+  countryCode String?  @map("country_code") @db.VarChar(10)
+  state       String?  @map("origin_region") @db.VarChar(100)
+  city        String?  @map("origin_city") @db.VarChar(100)
+  country     Country? @relation(fields: [countryCode], references: [code])
 
   createdTrips     Trip[]              @relation("TripCreator")
   sentRequests     ConnectionRequest[] @relation("ConnectionSender")
@@ -55,13 +49,6 @@ model User {
   verifications            Verification[]
   userAConnections         Connection[]            @relation("ConnectionUserA")
   userBConnections         Connection[]            @relation("ConnectionUserB")
-  tripGroupsOwned          TripGroup[]             @relation("TripGroupOwner")
-  createdTasks             ChecklistItem[]         @relation("ChecklistCreator")
-  groupMemberships         TripGroupMember[]
-  createdExpenses          Expense[]               @relation("ExpenseCreator")
-  expenseActivities        ExpenseActivity[]
-  groupInvitesSent         TripGroupInvite[]       @relation("TripGroupInviter")
-  checklistActivities      ChecklistActivity[]
   aiConversations          AssistantConversation[]
   chatConversationsAsUserA ChatConversation[]      @relation("ChatUserA")
   chatConversationsAsUserB ChatConversation[]      @relation("ChatUserB")
@@ -69,10 +56,11 @@ model User {
   initiatedCalls           Call[]                  @relation("CallCaller")
   receivedCalls            Call[]                  @relation("CallRecipient")
   callParticipants         CallParticipant[]
+  communityTripBookings    CommunityTripBooking[]
 
   @@index([email])
   @@index([phone])
-  @@index([accountStatusCode])
+  @@index([accountStatus])
   @@index([isPhoneVerified])
   @@index([isIdVerified])
   @@index([deletedAt])
@@ -89,15 +77,14 @@ model UserLocation {
   coordinates  Unsupported("geography(Point,4326)")?
   updatedAt    DateTime                              @default(now()) @map("updated_at") @db.Timestamptz(6)
 
-  onlineStatusCode String       @default("offline") @map("online_status_code") @db.VarChar(20)
-  onlineStatus     OnlineStatus @relation(fields: [onlineStatusCode], references: [code])
+  onlineStatus OnlineStatus @default(OFFLINE) @map("online_status")
 
   currentCountryCode String?  @map("current_country_code") @db.VarChar(10)
   currentCountry     Country? @relation(fields: [currentCountryCode], references: [code])
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([onlineStatusCode])
+  @@index([onlineStatus])
   @@index([currentLat, currentLng])
   @@map("user_locations")
 }
@@ -109,8 +96,7 @@ model UserOnboarding {
   completedAt         DateTime? @map("completed_at") @db.Timestamptz(6)
   updatedAt           DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
 
-  onboardingSourceCode String?           @map("onboarding_source_code") @db.VarChar(50)
-  onboardingSource     OnboardingSource? @relation(fields: [onboardingSourceCode], references: [code])
+  onboardingSource OnboardingSource? @map("onboarding_source")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -123,11 +109,8 @@ model UserPrivacy {
   showTravelingStatus Boolean  @default(false) @map("show_traveling_status")
   updatedAt           DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
 
-  profileVisibilityCode String?            @default("everyone") @map("profile_visibility_code") @db.VarChar(30)
-  profileVisibility     ProfileVisibility? @relation(fields: [profileVisibilityCode], references: [code])
-
-  requestsFromCode String?            @default("everyone") @map("requests_from_code") @db.VarChar(30)
-  requestsFrom     RequestFromOption? @relation(fields: [requestsFromCode], references: [code])
+  profileVisibility ProfileVisibility? @default(EVERYONE) @map("profile_visibility")
+  requestsFrom     RequestFromOption? @default(EVERYONE) @map("requests_from")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -135,15 +118,15 @@ model UserPrivacy {
 }
 
 model UserStatusHistory {
-  id             String    @id @default(uuid()) @db.Uuid
-  userId         String    @map("user_id") @db.Uuid
-  statusCode     String    @map("status_code") @db.VarChar(20)
+  id             String        @id @default(uuid()) @db.Uuid
+  userId         String        @map("user_id") @db.Uuid
+  statusCode     AccountStatus @map("status_code")
   reason         String?
-  durationDays   Int?      @map("duration_days")
-  effectiveFrom  DateTime  @map("effective_from") @db.Timestamptz(6)
-  effectiveUntil DateTime? @map("effective_until") @db.Timestamptz(6)
-  actionedBy     String?   @map("actioned_by") @db.Uuid
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  durationDays   Int?          @map("duration_days")
+  effectiveFrom  DateTime      @map("effective_from") @db.Timestamptz(6)
+  effectiveUntil DateTime?     @map("effective_until") @db.Timestamptz(6)
+  actionedBy     String?       @map("actioned_by") @db.Uuid
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -193,21 +176,19 @@ model ConnectionRequest {
   senderId   String @db.Uuid
   receiverId String @db.Uuid
 
-  matchId String
+  matchId String?
 
   message String?
 
-  statusCode String @default("pending")
+  status ConnectionRequestStatus @default(PENDING) @map("status")
 
   createdAt   DateTime  @default(now())
   respondedAt DateTime?
 
   sender User @relation("ConnectionSender", fields: [senderId], references: [id], onDelete: Cascade)
 
-  receiver User      @relation("ConnectionReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
-  match    TripMatch @relation(fields: [matchId], references: [id])
-
-  status ConnectionStatus @relation(fields: [statusCode], references: [code])
+  receiver User       @relation("ConnectionReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  match    TripMatch? @relation(fields: [matchId], references: [id], onDelete: SetNull)
 
   connections Connection[]
 
@@ -215,14 +196,6 @@ model ConnectionRequest {
   @@index([senderId])
   @@index([receiverId])
   @@map("connection_requests")
-}
-
-model ConnectionStatus {
-  code String @id
-
-  requests ConnectionRequest[]
-
-  @@map("connection_status")
 }
 
 model Connection {

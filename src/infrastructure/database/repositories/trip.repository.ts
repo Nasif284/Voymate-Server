@@ -1,10 +1,19 @@
 import { inject, injectable } from 'tsyringe';
-import { Trip, Prisma, PrismaClient } from '@prisma/client';
+import {
+  Trip,
+  Prisma,
+  PrismaClient,
+  BudgetStyle,
+  TripStyle,
+  TripStatus,
+  ConnectionRequestStatus,
+} from '@prisma/client';
 import { BaseRepository } from './base.repository';
 import { TOKENS } from '../../di/tokens';
 import {
-  GroupTripForAI,
   ITripRepository,
+  CandidateTripDetail,
+  CandidateTripFilterCriteria,
 } from '../../../application/interfaces/repositories/trip.repository';
 import {
   CreateDestinationRequestDTO,
@@ -12,13 +21,10 @@ import {
 } from '../../../application/dtos/trip/request/destination.dto';
 import { CreateTripDataDTO } from '../../../application/dtos/trip/request/create-trip.dto';
 import {
-  TripMemberRole,
-  TripStatus,
-} from '../../../domain/enums/trip.constants';
-import {
   SaveTripMatchDTO,
   TripForMatchingDTO,
 } from '../../../application/dtos/trip/responce/calculate-mathc.dto';
+import { BuddyUpcomingTripDTO } from '../../../application/dtos/trip/responce/get-buddies-upcoming-trips.dto';
 import { TripMatchResponseDTO } from '../../../application/dtos/trip/responce/get-matches.dto';
 import { calculateAge } from '../../../shared/helpers/calculateAge';
 import { GetActiveTripResponseDTO } from '../../../application/dtos/trip/responce/get-active-trip.dto';
@@ -28,20 +34,6 @@ import {
   MatchExplanation,
 } from '../../../application/dtos/trip/responce/get-match-profile.dto';
 import { EditTripData } from '../../../application/dtos/trip/request/edit-trip.dto';
-import {
-  GetGroupsResponseDTO,
-  GroupData,
-} from '../../../application/dtos/trip/responce/get-groups.dto';
-import { GetMembersResponseDTO } from '../../../application/dtos/trip/responce/get-members.dto';
-import {
-  GroupNotFound,
-  OnlyAdminCanRemoveError,
-  UserAlreadyExistInTheGroupError,
-} from '../../../domain/errors/trip.error';
-import { GetGroupInvitesResponse } from '../../../application/dtos/trip/responce/get-invites.dto';
-import { TripDestination } from '../../../application/dtos/trip/responce/get-weather.dto';
-import { GetGroupsRequestDTO } from '../../../application/dtos/trip/request/get-all-groups.dto';
-import { GetAllGroupsResponseDTO } from '../../../application/dtos/trip/responce/get-all-groups.dto';
 
 @injectable()
 export class TripRepository
@@ -82,16 +74,8 @@ export class TripRepository
             id: payload.createdBy,
           },
         },
-        budgetStyle: {
-          connect: {
-            code: payload.budgetStyle,
-          },
-        },
-        travelStyle: {
-          connect: {
-            code: payload.travelStyleCode,
-          },
-        },
+        budgetStyle: payload.budgetStyle.toUpperCase() as BudgetStyle,
+        travelStyle: payload.travelStyleCode.toUpperCase() as TripStyle,
       },
     });
 
@@ -124,7 +108,7 @@ export class TripRepository
         createdBy: {
           not: userId,
         },
-        statusCode: TripStatus.UPCOMING,
+        status: TripStatus.UPCOMING,
       },
       include: {
         destination: {
@@ -136,7 +120,6 @@ export class TripRepository
           include: {
             interests: true,
             languages: true,
-            travelPersonality: true,
           },
         },
       },
@@ -149,8 +132,8 @@ export class TripRepository
       dateFrom: trip.dateFrom,
       dateTo: trip.dateTo,
 
-      budgetStyleCode: trip.budgetStyleCode,
-      travelStyleCode: trip.travelStyleCode,
+      budgetStyleCode: trip.budgetStyle,
+      travelStyleCode: trip.travelStyle,
 
       destination: {
         id: trip.destination.id,
@@ -165,7 +148,7 @@ export class TripRepository
 
       creator: {
         id: trip.creator.id,
-        travelPersonalityCode: trip.creator.travelPersonalityCode,
+        travelPersonalityCode: trip.creator.travelPersonality,
         interests: trip.creator.interests.map((interest) => ({
           interestCode: interest.interest,
         })),
@@ -192,7 +175,6 @@ export class TripRepository
           include: {
             interests: true,
             languages: true,
-            travelPersonality: true,
           },
         },
       },
@@ -210,8 +192,8 @@ export class TripRepository
       dateFrom: trip.dateFrom,
       dateTo: trip.dateTo,
 
-      budgetStyleCode: trip.budgetStyleCode,
-      travelStyleCode: trip.travelStyleCode,
+      budgetStyleCode: trip.budgetStyle,
+      travelStyleCode: trip.travelStyle,
 
       destination: {
         id: trip.destination.id,
@@ -226,7 +208,7 @@ export class TripRepository
 
       creator: {
         id: trip.creator.id,
-        travelPersonalityCode: trip.creator.travelPersonalityCode,
+        travelPersonalityCode: trip.creator.travelPersonality,
         interests: trip.creator.interests.map((interest) => ({
           interestCode: interest.interest,
         })),
@@ -291,7 +273,7 @@ export class TripRepository
         {
           tripAId: tripId,
           tripB: {
-            statusCode: TripStatus.UPCOMING,
+            status: TripStatus.UPCOMING,
             dateTo: {
               gte: new Date(),
             },
@@ -300,7 +282,7 @@ export class TripRepository
         {
           tripBId: tripId,
           tripA: {
-            statusCode: TripStatus.UPCOMING,
+            status: TripStatus.UPCOMING,
             dateTo: {
               gte: new Date(),
             },
@@ -310,7 +292,7 @@ export class TripRepository
 
       connectionRequest: {
         none: {
-          statusCode: 'accepted',
+          status: ConnectionRequestStatus.ACCEPTED,
         },
       },
     };
@@ -334,7 +316,6 @@ export class TripRepository
                 include: {
                   interests: true,
                   languages: true,
-                  travelPersonality: true,
                   country: true,
                 },
               },
@@ -349,7 +330,6 @@ export class TripRepository
                 include: {
                   interests: true,
                   languages: true,
-                  travelPersonality: true,
                   country: true,
                 },
               },
@@ -379,7 +359,7 @@ export class TripRepository
             interests: matchedTrip.creator.interests.map(
               (interest) => interest.interest,
             ),
-            travelPersonality: matchedTrip.creator.travelPersonalityCode,
+            travelPersonality: matchedTrip.creator.travelPersonality,
           },
           tripMatch: {
             id: match.id,
@@ -404,7 +384,7 @@ export class TripRepository
     const trip = await this.prisma.trip.findFirst({
       where: {
         createdBy: payload.userId,
-        statusCode: TripStatus.UPCOMING,
+        status: TripStatus.UPCOMING,
         dateTo: {
           gte: new Date(),
         },
@@ -437,10 +417,10 @@ export class TripRepository
         state: trip.destination.state,
         coverUrl: trip.destination.coverUrl,
       },
-      budgetStyleCode: trip.budgetStyleCode,
+      budgetStyleCode: trip.budgetStyle,
       dateFrom: trip.dateFrom,
       dateTo: trip.dateTo,
-      travelStyleCode: trip.travelStyleCode,
+      travelStyleCode: trip.travelStyle,
     };
   }
 
@@ -453,17 +433,12 @@ export class TripRepository
         dateTo: {
           gte: new Date(),
         },
-        statusCode: { not: TripStatus.CANCELLED },
+        status: { not: TripStatus.CANCELLED },
       },
       include: {
         destination: {
           include: {
             country: true,
-          },
-        },
-        group: {
-          select: {
-            id: true,
           },
         },
       },
@@ -485,10 +460,9 @@ export class TripRepository
             state: trip.destination.state,
             coverUrl: trip.destination.coverUrl,
           },
-          budgetStyleCode: trip.budgetStyleCode,
+          budgetStyleCode: trip.budgetStyle,
           destinationId: trip.destinationId,
-          travelStyleCode: trip.travelStyleCode,
-          group: trip.group ? { id: trip.group.id } : null,
+          travelStyleCode: trip.travelStyle,
         };
       }),
     };
@@ -498,97 +472,86 @@ export class TripRepository
     matchId: string;
     userId: string;
   }): Promise<GetMatchProfileResponseDTO> {
-    const match = await this.prisma.tripMatch.findFirst({
-      where: {
-        id: payload.matchId,
-      },
-      include: {
-        tripA: {
-          include: {
-            destination: {
-              include: {
-                country: true,
-              },
-            },
-
-            creator: {
-              include: {
-                interests: true,
-                languages: true,
-                skills: true,
-                country: true,
-              },
-            },
-          },
-        },
-
-        tripB: {
-          include: {
-            destination: {
-              include: {
-                country: true,
-              },
-            },
-
-            creator: {
-              include: {
-                interests: true,
-                languages: true,
-                skills: true,
-                country: true,
-              },
-            },
-          },
-        },
-      },
-    });
-    if (!match) {
-      throw new Error('no match found');
+    const targetTrip = await this.getDetailedTrip(payload.matchId);
+    if (!targetTrip) {
+      throw new Error('Matched trip not found');
     }
 
-    const matchedTrip =
-      match?.tripA.createdBy == payload.userId ? match?.tripB : match?.tripA;
-    const explanation = match.explanation as unknown as MatchExplanation;
+    const activeTrip = await this.getActiveTrip({ userId: payload.userId });
+    let totalPoints = 75;
+    const reasons: string[] = [];
+
+    if (activeTrip) {
+      if (
+        activeTrip.destination.name.toLowerCase() ===
+        targetTrip.destinationName.toLowerCase()
+      ) {
+        totalPoints += 15;
+        reasons.push(`Both traveling to ${targetTrip.destinationName}`);
+      } else if (
+        activeTrip.destination.state &&
+        targetTrip.destinationState &&
+        activeTrip.destination.state.toLowerCase() ===
+          targetTrip.destinationState.toLowerCase()
+      ) {
+        totalPoints += 10;
+        reasons.push(`Both heading to ${targetTrip.destinationState}`);
+      }
+      reasons.push(
+        `Compatible travel style (${targetTrip.travelStyle.toLowerCase()})`,
+      );
+    } else {
+      reasons.push(`Compatible travel companion`);
+    }
+
+    if (targetTrip.creator.interests.length > 0) {
+      reasons.push(
+        `Interests: ${targetTrip.creator.interests.slice(0, 3).join(', ')}`,
+      );
+    }
+
     return {
       match: {
-        id: match?.id,
-        explanation: explanation,
-        totalPoints: match?.totalScore,
+        id: targetTrip.id,
+        explanation: { reasons },
+        totalPoints: Math.min(100, totalPoints),
       },
       matchedTrip: {
-        id: matchedTrip?.id,
-        name: matchedTrip?.name,
-        budgetStyle: matchedTrip?.budgetStyleCode,
-        dateFrom: matchedTrip?.dateFrom,
-        dateTo: matchedTrip?.dateTo,
-        travelStyle: matchedTrip.travelStyleCode,
+        id: targetTrip.id,
+        name: targetTrip.name,
+        budgetStyle: targetTrip.budgetStyle,
+        dateFrom: targetTrip.dateFrom,
+        dateTo: targetTrip.dateTo,
+        travelStyle: targetTrip.travelStyle,
         destination: {
-          id: matchedTrip?.destination.id,
-          name: matchedTrip?.destination.name,
-          coverUrl: matchedTrip?.destination.coverUrl,
-          city: matchedTrip?.destination.city,
-          country: matchedTrip?.destination.country.name,
-          state: matchedTrip?.destination.state,
+          id: targetTrip.destinationId,
+          name: targetTrip.destinationName,
+          coverUrl: targetTrip.coverUrl,
+          city: targetTrip.destinationCity,
+          country:
+            targetTrip.destinationCountryName ||
+            targetTrip.destinationCountryCode,
+          state: targetTrip.destinationState,
         },
       },
       user: {
-        id: matchedTrip?.creator.id,
-        fullName: matchedTrip.creator.fullName,
-        age: calculateAge(matchedTrip.creator.dateOfBirth!),
-        avatarUrl: matchedTrip.creator.avatarUrl,
-        bio: matchedTrip.creator.bio,
-        city: matchedTrip.creator.city,
-        country: matchedTrip.creator.country?.name ?? null,
-        coverUrl: matchedTrip.creator.coverUrl,
-        travelPersonality: matchedTrip.creator.travelPersonalityCode,
-        travelType: matchedTrip.creator.travelTypeCode,
-        state: matchedTrip.creator.state,
-        createdAt: matchedTrip.creator.createdAt,
-        interests: matchedTrip.creator.interests.map(
-          (interest) => interest.interest,
-        ),
-        languages: matchedTrip.creator.languages.map((lang) => lang.language),
-        skills: matchedTrip.creator.skills.map((skill) => skill.skill),
+        id: targetTrip.creator.id,
+        fullName: targetTrip.creator.fullName,
+        age: targetTrip.creator.dateOfBirth
+          ? calculateAge(targetTrip.creator.dateOfBirth)
+          : null,
+        avatarUrl: targetTrip.creator.avatarUrl,
+        bio: targetTrip.creator.bio,
+        city: targetTrip.creator.city,
+        country: targetTrip.creator.country,
+        coverUrl: targetTrip.creator.coverUrl,
+        travelPersonality: targetTrip.creator.travelPersonality,
+        travelType: targetTrip.creator.travelType,
+        state: targetTrip.creator.state,
+        createdAt: targetTrip.creator.createdAt,
+        interests: targetTrip.creator.interests,
+        languages: targetTrip.creator.languages,
+        skills: targetTrip.creator.skills,
       },
     };
   }
@@ -599,7 +562,7 @@ export class TripRepository
     const trips = await this.prisma.trip.findMany({
       where: {
         createdBy: payload.userId,
-        statusCode: { not: TripStatus.CANCELLED },
+        status: { not: TripStatus.CANCELLED },
         dateTo: {
           lt: new Date(),
         },
@@ -608,11 +571,6 @@ export class TripRepository
         destination: {
           include: {
             country: true,
-          },
-        },
-        group: {
-          select: {
-            id: true,
           },
         },
       },
@@ -634,66 +592,470 @@ export class TripRepository
             state: trip.destination.state,
             coverUrl: trip.destination.coverUrl,
           },
-          budgetStyleCode: trip.budgetStyleCode,
+          budgetStyleCode: trip.budgetStyle,
           destinationId: trip.destinationId,
-          travelStyleCode: trip.travelStyleCode,
-          group: trip.group ? { id: trip.group.id } : null,
+          travelStyleCode: trip.travelStyle,
         };
       }),
     };
   }
 
   async editTrip(tripId: string, payload: EditTripData): Promise<void> {
+    const data: Prisma.TripUpdateInput = {};
+    if (payload.dateFrom) data.dateFrom = payload.dateFrom;
+    if (payload.dateTo) data.dateTo = payload.dateTo;
+    if (payload.budgetStyleCode)
+      data.budgetStyle = payload.budgetStyleCode.toUpperCase() as BudgetStyle;
+    if (payload.travelStyleCode)
+      data.travelStyle = payload.travelStyleCode.toUpperCase() as TripStyle;
+    if (payload.statusCode)
+      data.status = payload.statusCode.toUpperCase() as TripStatus;
+
     await this.prisma.trip.update({
       where: {
         id: tripId,
       },
-      data: payload,
+      data,
     });
   }
 
-  async getTripDestination(
-    tripGroupId: string,
-  ): Promise<TripDestination | null> {
-    const tripGroup = await this.prisma.tripGroup.findUnique({
-      where: {
-        id: tripGroupId,
-      },
-      select: {
-        trip: {
-          select: {
-            destination: {
-              select: {
-                id: true,
-                latitude: true,
-                longitude: true,
-                city: true,
-                state: true,
-                country: {
-                  select: {
-                    name: true,
-                  },
-                },
-              },
-            },
+  async getDetailedTrip(tripId: string): Promise<CandidateTripDetail | null> {
+    const trip = await this.prisma.trip.findUnique({
+      where: { id: tripId },
+      include: {
+        destination: {
+          include: {
+            country: true,
+          },
+        },
+        creator: {
+          include: {
+            interests: true,
+            languages: true,
+            skills: true,
+            country: true,
           },
         },
       },
     });
 
-    if (!tripGroup) {
-      return null;
-    }
-
-    const destination = tripGroup.trip.destination;
+    if (!trip) return null;
 
     return {
-      destinationId: destination.id,
-      latitude: Number(destination.latitude),
-      longitude: Number(destination.longitude),
-      city: destination.city ?? '',
-      state: destination.state,
-      country: destination.country.name,
+      id: trip.id,
+      name: trip.name,
+      destinationId: trip.destinationId,
+      destinationName: trip.destination.name,
+      destinationCity: trip.destination.city,
+      destinationState: trip.destination.state,
+      destinationCountryCode: trip.destination.countryCode,
+      destinationCountryName: trip.destination.country.name,
+      destinationLat: Number(trip.destination.latitude),
+      destinationLng: Number(trip.destination.longitude),
+      coverUrl: trip.destination.coverUrl,
+      dateFrom: trip.dateFrom,
+      dateTo: trip.dateTo,
+      budgetStyle: trip.budgetStyle,
+      travelStyle: trip.travelStyle,
+      connectionStatus: 'NONE',
+      creator: {
+        id: trip.creator.id,
+        fullName: trip.creator.fullName,
+        avatarUrl: trip.creator.avatarUrl,
+        coverUrl: trip.creator.coverUrl,
+        bio: trip.creator.bio,
+        dateOfBirth: trip.creator.dateOfBirth,
+        city: trip.creator.city,
+        state: trip.creator.state,
+        country: trip.creator.country?.name ?? null,
+        countryCode: trip.creator.countryCode,
+        travelPersonality: trip.creator.travelPersonality,
+        travelType: trip.creator.travelType,
+        interests: trip.creator.interests.map((i) => i.interest),
+        languages: trip.creator.languages.map((l) => l.language),
+        skills: trip.creator.skills.map((s) => s.skill),
+        createdAt: trip.creator.createdAt,
+      },
     };
+  }
+
+  async getUserDetailedUpcomingTrips(
+    userId: string,
+  ): Promise<CandidateTripDetail[]> {
+    const trips = await this.prisma.trip.findMany({
+      where: {
+        createdBy: userId,
+        status: TripStatus.UPCOMING,
+        dateTo: { gte: new Date() },
+      },
+      orderBy: {
+        dateFrom: 'asc',
+      },
+      include: {
+        destination: {
+          include: {
+            country: true,
+          },
+        },
+        creator: {
+          include: {
+            interests: true,
+            languages: true,
+            skills: true,
+            country: true,
+          },
+        },
+      },
+    });
+
+    return trips.map((trip) => ({
+      id: trip.id,
+      name: trip.name,
+      destinationId: trip.destinationId,
+      destinationName: trip.destination.name,
+      destinationCity: trip.destination.city,
+      destinationState: trip.destination.state,
+      destinationCountryCode: trip.destination.countryCode,
+      destinationCountryName: trip.destination.country.name,
+      destinationLat: Number(trip.destination.latitude),
+      destinationLng: Number(trip.destination.longitude),
+      coverUrl: trip.destination.coverUrl,
+      dateFrom: trip.dateFrom,
+      dateTo: trip.dateTo,
+      budgetStyle: trip.budgetStyle,
+      travelStyle: trip.travelStyle,
+      connectionStatus: 'NONE',
+      creator: {
+        id: trip.creator.id,
+        fullName: trip.creator.fullName,
+        avatarUrl: trip.creator.avatarUrl,
+        coverUrl: trip.creator.coverUrl,
+        bio: trip.creator.bio,
+        dateOfBirth: trip.creator.dateOfBirth,
+        city: trip.creator.city,
+        state: trip.creator.state,
+        country: trip.creator.country?.name ?? null,
+        countryCode: trip.creator.countryCode,
+        travelPersonality: trip.creator.travelPersonality,
+        travelType: trip.creator.travelType,
+        interests: trip.creator.interests.map((i) => i.interest),
+        languages: trip.creator.languages.map((l) => l.language),
+        skills: trip.creator.skills.map((s) => s.skill),
+        createdAt: trip.creator.createdAt,
+      },
+    }));
+  }
+
+  async getCandidateTripsForMatching(
+    tripId: string | null | undefined,
+    userId: string,
+    filterCriteria?: CandidateTripFilterCriteria,
+  ): Promise<CandidateTripDetail[]> {
+    const where: Prisma.TripWhereInput = {
+      createdBy: { not: userId },
+      status: TripStatus.UPCOMING,
+      dateTo: { gte: new Date() },
+      creator: {
+        accountStatus: 'ACTIVE',
+      },
+    };
+
+    if (tripId) {
+      where.id = { not: tripId };
+    }
+
+    // 1. Stage 1 Indexed Funneling: State-based destination + Overlapping dates
+    if (filterCriteria?.targetTrips && filterCriteria.targetTrips.length > 0) {
+      const tripConditions: Prisma.TripWhereInput[] = [];
+
+      for (const trip of filterCriteria.targetTrips) {
+        // Overlapping dates window (with 5-day flexibility buffer)
+        const maxDate = new Date(trip.dateTo);
+        maxDate.setDate(maxDate.getDate() + 5);
+        const minDate = new Date(trip.dateFrom);
+        minDate.setDate(minDate.getDate() - 5);
+
+        const condition: Prisma.TripWhereInput = {
+          dateFrom: { lte: maxDate },
+          dateTo: { gte: minDate },
+        };
+
+        // State-based filtering: connect companions traveling to the same region (e.g. Himachal Pradesh, Goa, Kerala)
+        if (trip.destinationState) {
+          condition.destination = {
+            state: {
+              equals: trip.destinationState,
+              mode: 'insensitive',
+            },
+          };
+        } else if (trip.destinationCountryCode) {
+          // Fallback only if state is null/undefined (e.g. city-state)
+          condition.destination = {
+            countryCode: trip.destinationCountryCode,
+          };
+        }
+
+        tripConditions.push(condition);
+      }
+
+      if (tripConditions.length > 0) {
+        where.OR = tripConditions;
+      }
+    }
+
+    // 2. Search mode specific filters
+    if (
+      filterCriteria?.destinationName ||
+      filterCriteria?.city ||
+      filterCriteria?.state ||
+      filterCriteria?.countryCode
+    ) {
+      const destFilter: Prisma.DestinationWhereInput = {};
+      if (filterCriteria.countryCode) {
+        destFilter.countryCode = filterCriteria.countryCode;
+      }
+      if (filterCriteria.state) {
+        destFilter.state = {
+          contains: filterCriteria.state,
+          mode: 'insensitive',
+        };
+      }
+      if (filterCriteria.city) {
+        destFilter.city = {
+          contains: filterCriteria.city,
+          mode: 'insensitive',
+        };
+      }
+      if (filterCriteria.destinationName) {
+        destFilter.name = {
+          contains: filterCriteria.destinationName,
+          mode: 'insensitive',
+        };
+      }
+      where.destination = destFilter;
+    }
+
+    if (filterCriteria?.dateFrom && filterCriteria?.dateTo) {
+      where.dateFrom = { lte: filterCriteria.dateTo };
+      where.dateTo = { gte: filterCriteria.dateFrom };
+    }
+
+    if (filterCriteria?.travelStyle) {
+      where.travelStyle = filterCriteria.travelStyle as TripStyle;
+    }
+
+    if (filterCriteria?.budgetStyle) {
+      where.budgetStyle = filterCriteria.budgetStyle as BudgetStyle;
+    }
+
+    const takeLimit =
+      filterCriteria?.limit && filterCriteria.limit > 0
+        ? filterCriteria.limit
+        : 100;
+
+    const [connections, sentRequests, receivedRequests, trips] =
+      await Promise.all([
+        this.prisma.connection.findMany({
+          where: {
+            OR: [
+              { userAId: userId, isActive: true },
+              { userBId: userId, isActive: true },
+            ],
+          },
+          select: { userAId: true, userBId: true },
+        }),
+        this.prisma.connectionRequest.findMany({
+          where: {
+            senderId: userId,
+            status: ConnectionRequestStatus.PENDING,
+          },
+          select: { receiverId: true, id: true },
+        }),
+        this.prisma.connectionRequest.findMany({
+          where: {
+            receiverId: userId,
+            status: ConnectionRequestStatus.PENDING,
+          },
+          select: { senderId: true, id: true },
+        }),
+        this.prisma.trip.findMany({
+          where,
+          orderBy: {
+            dateFrom: 'asc',
+          },
+          include: {
+            destination: {
+              include: {
+                country: true,
+              },
+            },
+            creator: {
+              include: {
+                interests: true,
+                languages: true,
+                skills: true,
+                country: true,
+              },
+            },
+          },
+          take: takeLimit,
+        }),
+      ]);
+
+    const connectedUserIds = new Set<string>();
+    for (const conn of connections) {
+      if (conn.userAId === userId) {
+        connectedUserIds.add(conn.userBId);
+      } else {
+        connectedUserIds.add(conn.userAId);
+      }
+    }
+
+    const sentRequestsUserMap = new Map<string, string>();
+    for (const req of sentRequests) {
+      sentRequestsUserMap.set(req.receiverId, req.id);
+    }
+
+    const receivedRequestsUserMap = new Map<string, string>();
+    for (const req of receivedRequests) {
+      receivedRequestsUserMap.set(req.senderId, req.id);
+    }
+
+    return trips.map((trip) => {
+      let connectionStatus:
+        | 'CONNECTED'
+        | 'REQUEST_SENT'
+        | 'REQUEST_RECEIVED'
+        | 'NONE' = 'NONE';
+      let requestId: string | undefined = undefined;
+
+      const creatorId = trip.creator.id;
+      if (connectedUserIds.has(creatorId)) {
+        connectionStatus = 'CONNECTED';
+      } else if (sentRequestsUserMap.has(creatorId)) {
+        connectionStatus = 'REQUEST_SENT';
+        requestId = sentRequestsUserMap.get(creatorId);
+      } else if (receivedRequestsUserMap.has(creatorId)) {
+        connectionStatus = 'REQUEST_RECEIVED';
+        requestId = receivedRequestsUserMap.get(creatorId);
+      }
+
+      return {
+        id: trip.id,
+        name: trip.name,
+        destinationId: trip.destinationId,
+        destinationName: trip.destination.name,
+        destinationCity: trip.destination.city,
+        destinationState: trip.destination.state,
+        destinationCountryCode: trip.destination.countryCode,
+        destinationCountryName: trip.destination.country.name,
+        destinationLat: Number(trip.destination.latitude),
+        destinationLng: Number(trip.destination.longitude),
+        coverUrl: trip.destination.coverUrl,
+        dateFrom: trip.dateFrom,
+        dateTo: trip.dateTo,
+        budgetStyle: trip.budgetStyle,
+        travelStyle: trip.travelStyle,
+        connectionStatus,
+        requestId,
+        creator: {
+          id: trip.creator.id,
+          fullName: trip.creator.fullName,
+          avatarUrl: trip.creator.avatarUrl,
+          coverUrl: trip.creator.coverUrl,
+          bio: trip.creator.bio,
+          dateOfBirth: trip.creator.dateOfBirth,
+          city: trip.creator.city,
+          state: trip.creator.state,
+          country: trip.creator.country?.name ?? null,
+          countryCode: trip.creator.countryCode,
+          travelPersonality: trip.creator.travelPersonality,
+          travelType: trip.creator.travelType,
+          interests: trip.creator.interests.map((i) => i.interest),
+          languages: trip.creator.languages.map((l) => l.language),
+          skills: trip.creator.skills.map((s) => s.skill),
+          createdAt: trip.creator.createdAt,
+        },
+      };
+    });
+  }
+
+  async getBuddiesUpcomingTrips(
+    userId: string,
+  ): Promise<BuddyUpcomingTripDTO[]> {
+    const connections = await this.prisma.connection.findMany({
+      where: {
+        OR: [
+          { userAId: userId, isActive: true },
+          { userBId: userId, isActive: true },
+        ],
+      },
+      select: { userAId: true, userBId: true },
+    });
+
+    if (connections.length === 0) {
+      return [];
+    }
+
+    const buddyIds = connections.map((conn) =>
+      conn.userAId === userId ? conn.userBId : conn.userAId,
+    );
+
+    const trips = await this.prisma.trip.findMany({
+      where: {
+        createdBy: { in: buddyIds },
+        status: TripStatus.UPCOMING,
+        dateTo: { gte: new Date() },
+        creator: {
+          accountStatus: 'ACTIVE',
+        },
+      },
+      include: {
+        destination: {
+          include: {
+            country: true,
+          },
+        },
+        creator: {
+          include: {
+            country: true,
+          },
+        },
+      },
+      orderBy: {
+        dateFrom: 'asc',
+      },
+      take: 12,
+    });
+
+    return trips.map((trip) => ({
+      tripId: trip.id,
+      tripName: trip.name,
+      destination: {
+        id: trip.destination.id,
+        name: trip.destination.name,
+        city: trip.destination.city,
+        state: trip.destination.state,
+        country: trip.destination.country?.name ?? null,
+        coverUrl: trip.destination.coverUrl,
+      },
+      dateFrom: trip.dateFrom,
+      dateTo: trip.dateTo,
+      travelStyle: trip.travelStyle,
+      budgetStyle: trip.budgetStyle,
+      buddy: {
+        id: trip.creator.id,
+        fullName: trip.creator.fullName,
+        avatarUrl: trip.creator.avatarUrl,
+        coverUrl: trip.creator.coverUrl,
+        age: trip.creator.dateOfBirth
+          ? calculateAge(trip.creator.dateOfBirth)
+          : null,
+        city: trip.creator.city,
+        state: trip.creator.state,
+        country: trip.creator.country?.name ?? null,
+        travelPersonality: trip.creator.travelPersonality,
+      },
+    }));
   }
 }

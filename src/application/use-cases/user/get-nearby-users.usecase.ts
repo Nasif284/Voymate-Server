@@ -5,6 +5,7 @@ import { IUserRepository } from '../../interfaces/repositories/user.reposetory';
 import { GetNearbyUsersRequestDTO } from '../../dtos/users/request/nearby-users.dto';
 import { NearbyUsersResponseDTO } from '../../dtos/users/response/nearby-users.dto';
 import { IStorageService } from '../../interfaces/services/storage.service.interface';
+
 @injectable()
 export class GetNearbyUsers implements IGetNearbyUsers {
   constructor(
@@ -13,19 +14,20 @@ export class GetNearbyUsers implements IGetNearbyUsers {
     @inject(TOKENS.IStorageService)
     private readonly _storageService: IStorageService,
   ) {}
+
   async execute(
     dto: GetNearbyUsersRequestDTO,
   ): Promise<NearbyUsersResponseDTO> {
-    const { limit, page, total, users, totalPages } =
-      await this._userRepository.getNearbyUsers(
-        dto.userId,
-        dto.page,
-        dto.limit,
-        dto.radiusKm ?? 50,
-      );
-    return {
-      users: await Promise.all(
-        users.map(async (user) => ({
+    const result = await this._userRepository.getNearbyUsers(
+      dto.userId,
+      dto.page,
+      dto.limit,
+      dto.radiusKm ?? 50,
+    );
+
+    const formattedUsers = await Promise.all(
+      result.users.map(async (user) => {
+        return {
           ...user,
           avatarUrl: user.avatarUrl
             ? await this._storageService.getSignedUrl(user.avatarUrl)
@@ -33,12 +35,13 @@ export class GetNearbyUsers implements IGetNearbyUsers {
           coverUrl: user.coverUrl
             ? await this._storageService.getSignedUrl(user.coverUrl)
             : null,
-        })),
-      ),
-      limit,
-      page,
-      total,
-      totalPages,
+        };
+      }),
+    );
+
+    return {
+      ...result,
+      users: formattedUsers,
     };
   }
 }

@@ -1,6 +1,5 @@
 enum ChatType {
     DIRECT
-    GROUP
 }
 enum ChatMessageType {
     TEXT
@@ -15,19 +14,15 @@ enum MessageStatus {
 model ChatConversation {
     id String @id @default(uuid()) @db.Uuid
 
-    type ChatType
+    type ChatType @default(DIRECT)
 
     userAId String? @map("user_a_id") @db.Uuid
     userBId String? @map("user_b_id") @db.Uuid
-
-    groupId String? @unique @map("group_id") @db.Uuid
 
     directKey String? @unique @map("direct_key") @db.VarChar(100)
 
     userA User? @relation("ChatUserA",fields: [userAId],references: [id],onDelete: Cascade)
     userB User? @relation("ChatUserB",fields: [userBId],references: [id],onDelete: Cascade)
-
-    group TripGroup? @relation(fields: [groupId],references: [id],onDelete: Cascade)
 
     messages ChatMessage[]
 
@@ -37,7 +32,6 @@ model ChatConversation {
     @@index([type])
     @@index([userAId])
     @@index([userBId])
-    @@index([groupId])
     @@map("chat_conversations")
 }
 

@@ -17,12 +17,6 @@ export function buildCallRoutes(
   );
 
   router.post(
-    '/group',
-    auth.authenticate,
-    asyncHandler(controller.createGroupCall),
-  );
-
-  router.post(
     '/:callId/join',
     auth.authenticate,
     asyncHandler(controller.joinCall),

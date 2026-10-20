@@ -4,8 +4,6 @@ import { ITripRepository } from '../../interfaces/repositories/trip.repository';
 import { ICreateTrip } from '../../interfaces/use-cases/trip/create-trip.usecase';
 import { CreateTripRequestDTO } from '../../dtos/trip/request/create-trip.dto';
 import { IImageService } from '../../interfaces/services/image.service.interace';
-import { ICalculateMatch } from '../../interfaces/use-cases/trip/calculate-match.interface';
-import logger from '../../../infrastructure/logging/logger';
 
 @injectable()
 export class CreateTrip implements ICreateTrip {
@@ -13,8 +11,6 @@ export class CreateTrip implements ICreateTrip {
     @inject(TOKENS.ITripRepository)
     private readonly _tripRepository: ITripRepository,
     @inject(TOKENS.IImageService) private readonly _imageService: IImageService,
-    @inject(TOKENS.ICalculateMatch)
-    private readonly _calculateMatch: ICalculateMatch,
   ) {}
 
   async execute(dto: CreateTripRequestDTO): Promise<void> {
@@ -42,7 +38,8 @@ export class CreateTrip implements ICreateTrip {
         coverUrl: coverUrl ?? null,
       });
     }
-    const { tripId } = await this._tripRepository.createTrip({
+
+    await this._tripRepository.createTrip({
       name: dto.name,
       destinationId: destination.id,
       dateFrom: dto.dateFrom,
@@ -50,11 +47,6 @@ export class CreateTrip implements ICreateTrip {
       budgetStyle: dto.budgetStyle,
       travelStyleCode: dto.travelStyleCode,
       createdBy: dto.userId,
-    });
-    setImmediate(() => {
-      this._calculateMatch
-        .execute({ tripId, userId: dto.userId })
-        .catch(logger.error);
     });
   }
 }

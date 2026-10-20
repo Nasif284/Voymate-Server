@@ -34,24 +34,25 @@ export class AdminAuthController {
 
   private getCookieOptions(maxAge: number): CookieOptions {
     const isProduction = config.env === 'production';
+    const domain = process.env.FRONTEND_URL?.split('www.')[1];
     return {
       httpOnly: true,
       secure: isProduction,
       sameSite: isProduction ? 'none' : 'lax',
       maxAge,
       path: '/',
-      ...(isProduction ? { domain: 'travelbuddy.nasifhub.online' } : {}),
+      ...(isProduction ? { domain } : {}),
     };
   }
   private getClearCookieOptions(): CookieOptions {
     const isProduction = config.env === 'production';
-
+    const domain = process.env.FRONTEND_URL?.split('www.')[1];
     return {
       httpOnly: true,
       secure: isProduction,
       sameSite: isProduction ? 'none' : 'lax',
       path: '/',
-      ...(isProduction ? { domain: 'travelbuddy.nasifhub.online' } : {}),
+      ...(isProduction ? { domain } : {}),
     };
   }
   login = async (req: Request, res: Response): Promise<Response> => {

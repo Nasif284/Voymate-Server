@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { normalizeAdminRole } from '../../../domain/enums/admin-role.enum';
 
 export const CreateAdminSchema = z.object({
   fullName: z
@@ -9,16 +10,15 @@ export const CreateAdminSchema = z.object({
 
   email: z.email('Invalid email address format.').toLowerCase().trim(),
 
-  password: z
-    .string()
-    .min(8, 'Password must be at least 8 characters.')
-    .max(128, 'Password cannot exceed 128 characters.')
-    .regex(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-      'Password must contain at least one uppercase letter, one lowercase and one number.',
-    ),
-
-  role: z.enum(['super admin', 'analyst', 'moderator'], {
-    error: 'Invalid admin role.',
+  password: z.string(),
+  // .min(8, 'Password must be at least 8 characters.')
+  // .max(128, 'Password cannot exceed 128 characters.')
+  // .regex(
+  //   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+  //   'Password must contain at least one uppercase letter, one lowercase and one number.',
+  // ),
+  role: z.string().refine((val) => normalizeAdminRole(val) !== null, {
+    message:
+      'Invalid admin role. Allowed roles: Super Admin, Moderator, Analyst.',
   }),
 });

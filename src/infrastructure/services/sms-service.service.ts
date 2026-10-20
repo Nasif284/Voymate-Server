@@ -14,7 +14,7 @@ export class TwilioSmsService implements ISmsService {
 
   async sendOtp(phone: string, otp: string): Promise<void> {
     await this.client.messages.create({
-      body: `Your Travel Buddy verification code is ${otp}. It expires in 5 minutes.`,
+      body: `Your Voymate verification code is ${otp}. It expires in 5 minutes.`,
       from: config.twilio.phoneNumber,
       to: phone,
     });

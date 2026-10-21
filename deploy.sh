@@ -18,7 +18,7 @@ echo "=== [Voymate Deploy] Rolling out updated container ==="
 docker compose -f docker-compose.prod.yml up -d --no-deps api
 
 echo "=== [Voymate Deploy] Running database migrations ==="
-docker compose -f docker-compose.prod.yml exec -T api npx prisma migrate deploy
+docker compose -f docker-compose.prod.yml exec -T api doppler run -- npx prisma migrate deploy
 
 echo "=== [Voymate Deploy] Pruning dangling images ==="
 docker image prune -f

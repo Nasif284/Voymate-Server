@@ -142,7 +142,7 @@ jobs:
             --instance-ids "${{ vars.EC2_INSTANCE_ID }}" \
             --document-name "AWS-RunShellScript" \
             --parameters 'commands=[
-              "/home/ubuntu/deploy.sh"
+              "/home/ubuntu/apps/voymate/deploy.sh"
             ]' \
             --region ${{ vars.AWS_REGION }} \
             --query "Command.CommandId" \

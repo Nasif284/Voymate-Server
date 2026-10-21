@@ -1,99 +1,24 @@
-# services:
-#   api:
-#     build:
-#       context: .
-#       dockerfile: Dockerfile.prod
-#     ports:
-#       - '5000:5000'
-#     environment:
-#       DOPPLER_TOKEN: ${DOPPLER_TOKEN}
-#     depends_on:
-#       redis:
-#         condition: service_started
-#     restart: unless-stopped
-
-#   redis:
-#     image: redis:alpine
-#     volumes:
-#       - redis_data:/data
-#     restart: unless-stopped
-
-#   loki:
-#     image: grafana/loki:3.7.0
-#     container_name: travelbuddy-loki
-#     command:
-#       - -config.file=/etc/loki/loki-config.yaml
-#     volumes:
-#       - ./monitoring/loki/loki-config.yaml:/etc/loki/loki-config.yaml:ro
-#       - loki_data:/loki
-#     restart: unless-stopped
-
-#   alloy:
-#     image: grafana/alloy:latest
-#     container_name: travelbuddy-alloy
-#     command:
-#       - run
-#       - --server.http.listen-addr=0.0.0.0:12345
-#       - --storage.path=/var/lib/alloy/data
-#       - /etc/alloy/config.alloy
-#     volumes:
-#       - ./monitoring/alloy/config.alloy:/etc/alloy/config.alloy:ro
-#       - alloy_data:/var/lib/alloy/data
-#       - /var/run/docker.sock:/var/run/docker.sock:ro
-#     depends_on:
-#       - loki
-#     restart: unless-stopped
-
-#   grafana:
-#     image: grafana/grafana:latest
-#     container_name: travelbuddy-grafana
-#     environment:
-#       GF_SECURITY_ADMIN_USER: admin
-#       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
-#     volumes:
-#       - grafana_data:/var/lib/grafana
-#       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
-#     depends_on:
-#       - loki
-#     restart: unless-stopped
-
-#   prometheus:
-#     image: prom/prometheus:latest
-#     container_name: travelbuddy-prometheus
-#     command:
-#       - '--config.file=/etc/prometheus/prometheus.yml'
-#       - '--storage.tsdb.path=/prometheus'
-#     volumes:
-#       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-#       - prometheus_data:/prometheus
-#     depends_on:
-#       - api
-#     restart: unless-stopped
-
-# volumes:
-#   redis_data:
-#   loki_data:
-#   alloy_data:
-#   grafana_data:
-#   prometheus_data:
-
 services:
   api:
     image: 592193419505.dkr.ecr.ap-southeast-2.amazonaws.com/voymate-server:latest
+    container_name: voymate-api
+    restart: unless-stopped
     ports:
-      - '5000:5000'
+      - '127.0.0.1:5000:5000'
     environment:
       DOPPLER_TOKEN: ${DOPPLER_TOKEN}
-    depends_on:
-      redis:
-        condition: service_started
-    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 250M
+    networks:
+      - app-network
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
 
-  redis:
-    image: redis:alpine
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
-
-volumes:
-  redis_data:
+networks:
+  app-network:
+    external: true

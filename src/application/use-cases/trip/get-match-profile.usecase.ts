@@ -37,7 +37,7 @@ export class GetMatchProfile implements IGetMatchProfile {
       throw new Error('Matched trip not found');
     }
 
-    const cacheKey = `match:${dto.userId}:trip:${dto.matchId}`;
+    const cacheKey = `match:v2:${dto.userId}:trip:${dto.matchId}`;
     const cached = await this._cacheService.get(cacheKey);
 
     let totalScore: number;
@@ -150,8 +150,18 @@ export class GetMatchProfile implements IGetMatchProfile {
         JSON.stringify({ totalScore, reasons }),
       );
     }
-    console.log(targetTrip);
+    const relationships = await this._userRepository.getRelationshipsForUsers(
+      dto.userId,
+      [targetTrip.creator.id],
+    );
+    const rel = relationships[targetTrip.creator.id];
+    const connectionStatus = rel?.connectionStatus ?? 'NONE';
+    const connectionId = rel?.connectionId ?? null;
+    const requestId = rel?.requestId ?? null;
     return {
+      connectionStatus,
+      connectionId,
+      requestId,
       match: {
         id: targetTrip.id,
         totalPoints: totalScore,
@@ -199,6 +209,9 @@ export class GetMatchProfile implements IGetMatchProfile {
         skills: targetTrip.creator.skills,
         languages: targetTrip.creator.languages,
         createdAt: targetTrip.creator.createdAt,
+        connectionStatus,
+        connectionId,
+        requestId,
       },
     };
   }

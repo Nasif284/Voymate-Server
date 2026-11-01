@@ -30,6 +30,7 @@ import {
   UserLocationDataMissingError,
 } from '../../../domain/errors/user.error';
 import {
+  RelationshipInfo,
   UserCardDetailsResponseDTO,
   UserWithDetails,
 } from '../../../application/dtos/users/response/user-card.dto';
@@ -488,11 +489,16 @@ export class UserRepository
 
     const total = uniqueUserTrips.length;
     const paginatedTrips = uniqueUserTrips.slice(skip, skip + limit);
+    const relationships = await this.getRelationshipsForUsers(
+      currentUserId,
+      paginatedTrips.map((t) => t.creator.id),
+    );
 
     // 5. Map to UserCardDetailsResponseDTO
     return {
       users: paginatedTrips.map((trip) => {
         const u = trip.creator;
+        const rel = relationships[u.id];
         return {
           id: u.id,
           fullName: u.fullName,
@@ -506,6 +512,9 @@ export class UserRepository
           travelPersonality: u.travelPersonality,
           interests: u.interests.map((i) => i.interest),
           isTraveling: u.isTraveling,
+          connectionStatus: rel?.connectionStatus ?? 'NONE',
+          connectionId: rel?.connectionId ?? null,
+          requestId: rel?.requestId ?? null,
           activeTrip: {
             id: trip.id,
             name: trip.name,
@@ -729,14 +738,24 @@ export class UserRepository
       const total = Number(totalResult[0]?.count ?? 0);
 
       if (users.length > 0) {
+        const relationships = await this.getRelationshipsForUsers(
+          currentUserId,
+          users.map((u) => u.id),
+        );
         return {
-          users: users.map((u) => ({
-            ...u,
-            distanceKm:
-              u.distanceKm !== undefined && u.distanceKm !== null
-                ? Number(u.distanceKm)
-                : undefined,
-          })),
+          users: users.map((u) => {
+            const rel = relationships[u.id];
+            return {
+              ...u,
+              connectionStatus: rel?.connectionStatus ?? 'NONE',
+              connectionId: rel?.connectionId ?? null,
+              requestId: rel?.requestId ?? null,
+              distanceKm:
+                u.distanceKm !== undefined && u.distanceKm !== null
+                  ? Number(u.distanceKm)
+                  : undefined,
+            };
+          }),
           total,
           page,
           limit,
@@ -1203,5 +1222,90 @@ export class UserRepository
         isPhoneVerified: true,
       },
     });
+  }
+
+  async getRelationshipsForUsers(
+    currentUserId: string,
+    targetUserIds: string[],
+  ): Promise<Record<string, RelationshipInfo>> {
+    const result: Record<string, RelationshipInfo> = {};
+    if (!currentUserId || targetUserIds.length === 0) {
+      return result;
+    }
+
+    const uniqueTargetIds = Array.from(
+      new Set(targetUserIds.filter((id) => id && id !== currentUserId)),
+    );
+
+    for (const id of uniqueTargetIds) {
+      result[id] = {
+        connectionStatus: 'NONE',
+        connectionId: null,
+        requestId: null,
+      };
+    }
+
+    if (uniqueTargetIds.length === 0) {
+      return result;
+    }
+
+    const [connections, requests] = await Promise.all([
+      this.prisma.connection.findMany({
+        where: {
+          isActive: true,
+          OR: [
+            { userAId: currentUserId, userBId: { in: uniqueTargetIds } },
+            { userBId: currentUserId, userAId: { in: uniqueTargetIds } },
+          ],
+        },
+        select: {
+          id: true,
+          userAId: true,
+          userBId: true,
+        },
+      }),
+      this.prisma.connectionRequest.findMany({
+        where: {
+          status: ConnectionRequestStatus.PENDING,
+          OR: [
+            { senderId: currentUserId, receiverId: { in: uniqueTargetIds } },
+            { receiverId: currentUserId, senderId: { in: uniqueTargetIds } },
+          ],
+        },
+        select: {
+          id: true,
+          senderId: true,
+          receiverId: true,
+        },
+      }),
+    ]);
+
+    for (const req of requests) {
+      if (req.senderId === currentUserId) {
+        result[req.receiverId] = {
+          connectionStatus: 'REQUEST_SENT',
+          connectionId: null,
+          requestId: req.id,
+        };
+      } else {
+        result[req.senderId] = {
+          connectionStatus: 'REQUEST_RECEIVED',
+          connectionId: null,
+          requestId: req.id,
+        };
+      }
+    }
+
+    for (const conn of connections) {
+      const otherId =
+        conn.userAId === currentUserId ? conn.userBId : conn.userAId;
+      result[otherId] = {
+        connectionStatus: 'CONNECTED',
+        connectionId: conn.id,
+        requestId: null,
+      };
+    }
+
+    return result;
   }
 }

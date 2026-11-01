@@ -1,3 +1,5 @@
+import { UserConnectionStatus } from './user-card.dto';
+
 export interface GetUserProfileResponseDTO {
   id: string;
   fullName: string;
@@ -27,6 +29,9 @@ export interface GetUserProfileResponseDTO {
   matchWith: string;
   tripCount: number;
   connectionsCount: number;
+  connectionStatus?: UserConnectionStatus;
+  connectionId?: string | null;
+  requestId?: string | null;
   match?: {
     totalPoints: number;
     reasons: string[];

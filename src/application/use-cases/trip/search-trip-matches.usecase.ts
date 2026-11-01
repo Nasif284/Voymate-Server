@@ -169,6 +169,16 @@ export class SearchTripMatches implements ISearchTripMatches {
         if (scoreB !== scoreA) {
           return scoreB - scoreA;
         }
+        const destA = a.searchResult?.destinationScore ?? 0;
+        const destB = b.searchResult?.destinationScore ?? 0;
+        if (destB !== destA) {
+          return destB - destA;
+        }
+        const dateA = a.searchResult?.dateScore ?? 0;
+        const dateB = b.searchResult?.dateScore ?? 0;
+        if (dateB !== dateA) {
+          return dateB - dateA;
+        }
         return (
           new Date(a.trip.dateFrom).getTime() -
           new Date(b.trip.dateFrom).getTime()
@@ -247,7 +257,7 @@ export class SearchTripMatches implements ISearchTripMatches {
     const matches: TripMatch[] = await Promise.all(
       paginatedItems.map(async ({ trip, searchResult }) => {
         if (hasSearchFilters && searchResult) {
-          const cacheKey = `match:${dto.userId}:trip:${trip.id}`;
+          const cacheKey = `match:v2:${dto.userId}:trip:${trip.id}`;
           await this._cacheService.set(
             cacheKey,
             1800,

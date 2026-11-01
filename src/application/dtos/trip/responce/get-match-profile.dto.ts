@@ -1,4 +1,7 @@
 export interface GetMatchProfileResponseDTO {
+  connectionStatus?: 'CONNECTED' | 'REQUEST_SENT' | 'REQUEST_RECEIVED' | 'NONE';
+  connectionId?: string | null;
+  requestId?: string | null;
   user: {
     id: string;
     fullName: string;
@@ -15,6 +18,13 @@ export interface GetMatchProfileResponseDTO {
     skills: string[];
     languages: string[];
     createdAt: Date;
+    connectionStatus?:
+      | 'CONNECTED'
+      | 'REQUEST_SENT'
+      | 'REQUEST_RECEIVED'
+      | 'NONE';
+    connectionId?: string | null;
+    requestId?: string | null;
   };
   match: {
     id: string;

@@ -190,7 +190,18 @@ export class GetTripMatches implements IGetTripMatches {
     const validMatches = scoredMatches.filter((m) => m.result.totalScore >= 25);
 
     // Rank candidates descending by totalScore
-    validMatches.sort((a, b) => b.result.totalScore - a.result.totalScore);
+    validMatches.sort((a, b) => {
+      if (b.result.totalScore !== a.result.totalScore) {
+        return b.result.totalScore - a.result.totalScore;
+      }
+      if (b.result.destinationScore !== a.result.destinationScore) {
+        return b.result.destinationScore - a.result.destinationScore;
+      }
+      if (b.result.dateScore !== a.result.dateScore) {
+        return b.result.dateScore - a.result.dateScore;
+      }
+      return b.result.logisticsScore - a.result.logisticsScore;
+    });
 
     const total = validMatches.length;
     const totalPages = Math.ceil(total / dto.limit) || 1;
@@ -200,7 +211,7 @@ export class GetTripMatches implements IGetTripMatches {
     // Snapshot card scores in Redis for instant, guaranteed-consistent detail page loads (TTL: 30 mins)
     await Promise.all(
       paginatedMatches.map(async ({ candidate, result }) => {
-        const cacheKey = `match:${sourceTrip.creator.id}:trip:${candidate.id}`;
+        const cacheKey = `match:v2:${sourceTrip.creator.id}:trip:${candidate.id}`;
         await this._cacheService.set(
           cacheKey,
           1800,

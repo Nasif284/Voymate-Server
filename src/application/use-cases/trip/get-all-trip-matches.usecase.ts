@@ -203,9 +203,21 @@ export class GetAllTripMatches implements IGetAllTripMatches {
     );
 
     // 7. Sort all matches descending by totalScore
-    deduplicatedMatches.sort(
-      (a, b) => b.bestMatch.result.totalScore - a.bestMatch.result.totalScore,
-    );
+    deduplicatedMatches.sort((a, b) => {
+      if (b.bestMatch.result.totalScore !== a.bestMatch.result.totalScore) {
+        return b.bestMatch.result.totalScore - a.bestMatch.result.totalScore;
+      }
+      if (
+        b.bestMatch.result.destinationScore !==
+        a.bestMatch.result.destinationScore
+      ) {
+        return (
+          b.bestMatch.result.destinationScore -
+          a.bestMatch.result.destinationScore
+        );
+      }
+      return b.bestMatch.result.dateScore - a.bestMatch.result.dateScore;
+    });
 
     const total = deduplicatedMatches.length;
     const totalPages = Math.ceil(total / limit) || 1;
@@ -215,7 +227,7 @@ export class GetAllTripMatches implements IGetAllTripMatches {
     // 8. Snapshot card scores in Redis for instant, consistent detail view loads (TTL: 30 mins)
     await Promise.all(
       paginatedMatches.map(async ({ candidate, bestMatch }) => {
-        const cacheKey = `match:${dto.userId}:trip:${candidate.id}`;
+        const cacheKey = `match:v2:${dto.userId}:trip:${candidate.id}`;
         await this._cacheService.set(
           cacheKey,
           1800,

@@ -1,3 +1,15 @@
+export type UserConnectionStatus =
+  | 'CONNECTED'
+  | 'REQUEST_SENT'
+  | 'REQUEST_RECEIVED'
+  | 'NONE';
+
+export interface RelationshipInfo {
+  connectionStatus: UserConnectionStatus;
+  connectionId: string | null;
+  requestId: string | null;
+}
+
 export interface UserActiveTripDTO {
   id: string;
   name: string;
@@ -28,6 +40,9 @@ export interface UserWithDetails {
   matchScore?: number;
   reasons?: string[];
   activeTrip?: UserActiveTripDTO | null;
+  connectionStatus?: UserConnectionStatus;
+  connectionId?: string | null;
+  requestId?: string | null;
 }
 export interface UserCardDetailsResponseDTO {
   users: UserWithDetails[];

@@ -3,7 +3,10 @@ import { GetAllUsersRequestDTO } from '../../dtos/user-management/request/get-us
 import { User } from '../../../domain/entities/user/user.entity';
 import { ChangeUserStatusRequestDTO } from '../../dtos/user-management/request/change-status.dto';
 import { OnboardingSourceRequestDTO } from '../../dtos/onbaording/request/source.dto';
-import { UserCardDetailsResponseDTO } from '../../dtos/users/response/user-card.dto';
+import {
+  RelationshipInfo,
+  UserCardDetailsResponseDTO,
+} from '../../dtos/users/response/user-card.dto';
 import { NearbyUsersResponseDTO } from '../../dtos/users/response/nearby-users.dto';
 import { GetUserProfileResponseDTO } from '../../dtos/users/response/user-profile.dto';
 import { SendConnectionRequestDTO } from '../../dtos/connections/requests/send-connection-request.dto';
@@ -83,4 +86,8 @@ export interface IUserRepository {
     phone: string,
   ): Promise<{ id: string; isPhoneVerified: boolean } | null>;
   verifyPhone(userId: string, phone: string): Promise<void>;
+  getRelationshipsForUsers(
+    currentUserId: string,
+    targetUserIds: string[],
+  ): Promise<Record<string, RelationshipInfo>>;
 }

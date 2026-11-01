@@ -101,7 +101,13 @@ export class AuthController {
 
     return res
       .status(HttpStatus.CREATED)
-      .json(ApiResponse.success(USER_MESSAGES.REGISTER_SUCCESS, result.user));
+      .json(
+        ApiResponse.success(USER_MESSAGES.REGISTER_SUCCESS, {
+          ...(result.user as any),
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+        }),
+      );
   };
   verifyEmail = async (req: Request, res: Response): Promise<Response> => {
     const { code, email } = req.body;
@@ -127,12 +133,20 @@ export class AuthController {
     });
     return res
       .status(HttpStatus.OK)
-      .json(ApiResponse.success(USER_MESSAGES.LOGIN_SUCCESS, result.response));
+      .json(
+        ApiResponse.success(USER_MESSAGES.LOGIN_SUCCESS, {
+          ...(result.response as any),
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+        }),
+      );
   };
 
   refreshToken = async (req: Request, res: Response): Promise<Response> => {
     try {
-      const refreshToken = req.cookies?.refreshToken as string;
+      const refreshToken = (req.cookies?.refreshToken ||
+        req.body?.refreshToken ||
+        (req.headers['x-refresh-token'] as string)) as string;
       if (!refreshToken) {
         return res.status(HttpStatus.UNAUTHORIZED).json({
           success: false,
@@ -172,7 +186,13 @@ export class AuthController {
 
       return res
         .status(HttpStatus.OK)
-        .json(ApiResponse.success(USER_MESSAGES.TOKEN_REFRESHED, result.user));
+        .json(
+          ApiResponse.success(USER_MESSAGES.TOKEN_REFRESHED, {
+            ...(result.user as any),
+            accessToken: result.accessToken,
+            refreshToken: result.refreshToken,
+          }),
+        );
     } catch (err) {
       res.clearCookie('accessToken', this.getClearCookieOptions());
       res.clearCookie('refreshToken', this.getClearCookieOptions());
@@ -202,7 +222,9 @@ export class AuthController {
   };
 
   logout = async (req: Request, res: Response): Promise<Response> => {
-    const refreshToken = req.cookies?.refreshToken as string | undefined;
+    const refreshToken = (req.cookies?.refreshToken ||
+      req.body?.refreshToken ||
+      (req.headers['x-refresh-token'] as string)) as string | undefined;
     const userId = req.user?.userId;
     if (userId && refreshToken) {
       await this._logout.execute({ userId, refreshToken });

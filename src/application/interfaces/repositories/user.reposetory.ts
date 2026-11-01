@@ -53,7 +53,7 @@ export interface IUserRepository {
   getUserLocation(userId: string): Promise<{ lat: number; lang: number }>;
   getUsersForCard(
     currentUserId: string,
-    params: { page: number; limit: number },
+    params: { page: number; limit: number; includeAll?: boolean },
   ): Promise<UserCardDetailsResponseDTO>;
   getNearbyUsers(
     userId: string,

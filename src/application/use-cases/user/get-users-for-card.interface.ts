@@ -20,6 +20,7 @@ export class GetUsersForCard implements IGetUsersForCard {
       await this._userRepository.getUsersForCard(dto.userId, {
         page: dto.page,
         limit: dto.limit,
+        includeAll: dto.includeAll,
       });
 
     return {

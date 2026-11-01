@@ -4,12 +4,14 @@ import { IUpdateProfile } from '../../interfaces/use-cases/profile/update-profil
 import { TOKENS } from '../../../infrastructure/di/tokens';
 import { IUserRepository } from '../../interfaces/repositories/user.reposetory';
 import { UpdateProfileRequestDTO } from '../../dtos/profile/request/update-profile.dto';
+
 @injectable()
 export class UpdateProfile implements IUpdateProfile {
   constructor(
     @inject(TOKENS.IUserRepository)
     private readonly _userRepository: IUserRepository,
   ) {}
+
   async execute(dto: {
     userId: string;
     payload: UpdateProfileRequestDTO;
@@ -25,21 +27,39 @@ export class UpdateProfile implements IUpdateProfile {
     } = dto.payload;
     const user = await this._userRepository.getUserWithDetails(dto.userId);
 
-    await this._userRepository.deleteLanguages(user.id);
-    await this._userRepository.deleteSkills(user.id);
-    await this._userRepository.deleteInterests(user.id);
+    if (languages !== undefined) {
+      await this._userRepository.deleteLanguages(user.id);
+      if (Array.isArray(languages) && languages.length > 0) {
+        await this._userRepository.createLanguages(dto.userId, languages);
+      }
+    }
 
-    await this._userRepository.createTravelInterests(dto.userId, interests!);
-    await this._userRepository.createLanguages(dto.userId, languages!);
-    await this._userRepository.createSkills(dto.userId, skills!);
+    if (skills !== undefined) {
+      await this._userRepository.deleteSkills(user.id);
+      if (Array.isArray(skills) && skills.length > 0) {
+        await this._userRepository.createSkills(dto.userId, skills);
+      }
+    }
 
-    await this._userRepository.updateUser(dto.userId, {
-      bio,
-      fullName,
-      isTraveling,
-      travelPersonality: travelPersonalityCode
+    if (interests !== undefined) {
+      await this._userRepository.deleteInterests(user.id);
+      if (Array.isArray(interests) && interests.length > 0) {
+        await this._userRepository.createTravelInterests(dto.userId, interests);
+      }
+    }
+
+    const updateData: Record<string, any> = {};
+    if (bio !== undefined) updateData.bio = bio;
+    if (fullName !== undefined) updateData.fullName = fullName;
+    if (isTraveling !== undefined) updateData.isTraveling = isTraveling;
+    if (travelPersonalityCode !== undefined) {
+      updateData.travelPersonality = travelPersonalityCode
         ? (travelPersonalityCode.toUpperCase() as TravelPersonality)
-        : undefined,
-    });
+        : null;
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      await this._userRepository.updateUser(dto.userId, updateData);
+    }
   }
 }

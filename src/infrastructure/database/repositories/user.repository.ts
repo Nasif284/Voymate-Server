@@ -396,22 +396,24 @@ export class UserRepository
 
   async getUsersForCard(
     currentUserId: string,
-    params: { page: number; limit: number },
+    params: { page: number; limit: number; includeAll?: boolean },
   ): Promise<UserCardDetailsResponseDTO> {
-    const { page, limit } = params;
+    const { page, limit, includeAll = false } = params;
     const skip = (page - 1) * limit;
 
-    // 1. Fetch current user's active upcoming trip
-    const activeTrip = await this.prisma.trip.findFirst({
-      where: {
-        createdBy: currentUserId,
-        status: TripStatus.UPCOMING,
-        deletedAt: null,
-        dateTo: { gte: new Date() },
-      },
-      orderBy: { dateFrom: 'asc' },
-      include: { destination: true },
-    });
+    // 1. Fetch current user's active upcoming trip (only if destination exclusion is enabled)
+    const activeTrip = includeAll
+      ? null
+      : await this.prisma.trip.findFirst({
+          where: {
+            createdBy: currentUserId,
+            status: TripStatus.UPCOMING,
+            deletedAt: null,
+            dateTo: { gte: new Date() },
+          },
+          orderBy: { dateFrom: 'asc' },
+          include: { destination: true },
+        });
 
     // 2. Destination and region/state exclusion criteria
     const destinationExclusion: Prisma.TripWhereInput | undefined = activeTrip

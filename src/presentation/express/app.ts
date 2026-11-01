@@ -22,7 +22,7 @@ export class App {
   private initializeMiddleware(): void {
     this.app.use(
       cors({
-        origin: config.frontend_url,
+        origin: '*',
         credentials: true,
       }),
     );

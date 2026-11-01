@@ -8,16 +8,24 @@ import { getCookie } from '../../shared/helpers/getCookie';
 export function registerSocketAuth(io: Server) {
   io.use((socket, next) => {
     try {
-      const cookieHeader = socket.handshake.headers.cookie;
-      console.log('[Socket Auth] Cookie received:', !!cookieHeader);
-      if (!cookieHeader) {
-        return next(new Error('Authentication required'));
+      let accessToken =
+        socket.handshake.auth?.token ||
+        (socket.handshake.headers['authorization'] as string)?.replace(
+          'Bearer ',
+          '',
+        );
+
+      if (!accessToken && socket.handshake.headers.cookie) {
+        accessToken = getCookie(socket.handshake.headers.cookie, 'accessToken');
       }
-      const accessToken = getCookie(cookieHeader, 'accessToken');
-      console.log('[Socket Auth] Access token received:', !!accessToken);
+
       if (!accessToken) {
+        console.warn(
+          '[Socket Auth] Authentication required: no token provided',
+        );
         return next(new Error('Authentication required'));
       }
+
       const tokenService = container.resolve<ITokenService>(
         TOKENS.ITokenService,
       );

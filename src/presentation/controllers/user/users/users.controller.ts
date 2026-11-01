@@ -25,14 +25,15 @@ export class UsersController {
 
   getUsersForCard = async (req: Request, res: Response): Promise<Response> => {
     const userId = req.user?.userId;
-    const { page, limit } = req.query;
+    const { page, limit, includeAll } = req.query;
     if (!userId) {
       throw new UserNotFoundError();
     }
     const data = await this._getUsersForCardUseCase.execute({
       userId,
-      page: parseInt(page as string),
-      limit: parseInt(limit as string),
+      page: parseInt(page as string) || 1,
+      limit: parseInt(limit as string) || 10,
+      includeAll: includeAll === 'true',
     });
     return res
       .status(HttpStatus.OK)

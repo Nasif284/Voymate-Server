@@ -142,8 +142,7 @@ jobs:
             --instance-ids "${{ vars.EC2_INSTANCE_ID }}" \
             --document-name "AWS-RunShellScript" \
             --parameters 'commands=[
-              "/home/ubuntu/apps/voymate/deploy.sh",
-              "docker compose -f /home/ubuntu/apps/voymate/docker-compose.prod.yml exec -T api doppler run -- node scripts/restore-and-verify.js"
+              "/home/ubuntu/apps/voymate/deploy.sh"
             ]' \
             --region ${{ vars.AWS_REGION }} \
             --query "Command.CommandId" \

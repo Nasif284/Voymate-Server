@@ -99,15 +99,13 @@ export class AuthController {
       this.getCookieOptions(this._refreshTtl),
     );
 
-    return res
-      .status(HttpStatus.CREATED)
-      .json(
-        ApiResponse.success(USER_MESSAGES.REGISTER_SUCCESS, {
-          ...(result.user as any),
-          accessToken: result.accessToken,
-          refreshToken: result.refreshToken,
-        }),
-      );
+    return res.status(HttpStatus.CREATED).json(
+      ApiResponse.success(USER_MESSAGES.REGISTER_SUCCESS, {
+        ...(result.user as any),
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+      }),
+    );
   };
   verifyEmail = async (req: Request, res: Response): Promise<Response> => {
     const { code, email } = req.body;
@@ -131,15 +129,13 @@ export class AuthController {
     loginAttemptsTotal.inc({
       status: 'success',
     });
-    return res
-      .status(HttpStatus.OK)
-      .json(
-        ApiResponse.success(USER_MESSAGES.LOGIN_SUCCESS, {
-          ...(result.response as any),
-          accessToken: result.accessToken,
-          refreshToken: result.refreshToken,
-        }),
-      );
+    return res.status(HttpStatus.OK).json(
+      ApiResponse.success(USER_MESSAGES.LOGIN_SUCCESS, {
+        ...(result.response as any),
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+      }),
+    );
   };
 
   refreshToken = async (req: Request, res: Response): Promise<Response> => {
@@ -184,15 +180,13 @@ export class AuthController {
         this.getCookieOptions(this._refreshTtl),
       );
 
-      return res
-        .status(HttpStatus.OK)
-        .json(
-          ApiResponse.success(USER_MESSAGES.TOKEN_REFRESHED, {
-            ...(result.user as any),
-            accessToken: result.accessToken,
-            refreshToken: result.refreshToken,
-          }),
-        );
+      return res.status(HttpStatus.OK).json(
+        ApiResponse.success(USER_MESSAGES.TOKEN_REFRESHED, {
+          ...(result.user as any),
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+        }),
+      );
     } catch (err) {
       res.clearCookie('accessToken', this.getClearCookieOptions());
       res.clearCookie('refreshToken', this.getClearCookieOptions());

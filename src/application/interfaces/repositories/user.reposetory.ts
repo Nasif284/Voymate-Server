@@ -72,7 +72,7 @@ export interface IUserRepository {
   updateRequestStatus(payload: {
     requestId: string;
     status: string;
-  }): Promise<void>;
+  }): Promise<{ senderId: string; receiverId: string } | null>;
   getUserConnections(userId: string): Promise<GetConnectionsResponseDTO>;
   deactivateConnection(connectionId: string): Promise<void>;
   getSentRequests(userId: string): Promise<GetSentRequestsResponseDTO>;

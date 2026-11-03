@@ -57,6 +57,8 @@ model User {
   receivedCalls            Call[]                  @relation("CallRecipient")
   callParticipants         CallParticipant[]
   communityTripBookings    CommunityTripBooking[]
+  deviceTokens             UserDeviceToken[]
+  notifications            Notification[]
 
   @@index([email])
   @@index([phone])

@@ -1,3 +1,10 @@
+import { IPushNotificationService } from '../../application/interfaces/services/push-notification.service.interface';
+import { ExpoPushNotificationService } from '../services/expo-push-notification.service';
+import { INotificationQueueService } from '../../application/interfaces/services/notification-queue.service.interface';
+import { BullMQNotificationQueueService } from '../services/bullmq-notification-queue.service';
+import { INotificationDispatcherService } from '../../application/interfaces/services/notification-dispatcher.service.interface';
+import { NotificationDispatcherService } from '../services/notification-dispatcher.service';
+
 import 'reflect-metadata';
 import { container } from 'tsyringe';
 import { PrismaClient } from '@prisma/client';
@@ -33,6 +40,8 @@ import { registerCommunityDependencies } from './client-side/community/community
 import { CommunityRepository } from '../database/repositories/community.repository';
 import { CommunityTripRepository } from '../database/repositories/community-trip.repository';
 import { CommunityBookingRepository } from '../database/repositories/community-booking.repository';
+import { NotificationRepository } from '../database/repositories/notification.repository';
+import { DeviceTokenRepository } from '../database/repositories/device-token.repository';
 import { RazorpayPaymentService } from '../services/razorpay.service';
 import { CommunityAuthMiddleware } from '../../presentation/middleware/user/auth/communityAuth.middleware';
 import { TwilioSmsService } from '../services/sms-service.service';
@@ -165,6 +174,18 @@ export function registerDependencies(
     TOKENS.IRazorpayPaymentService,
     RazorpayPaymentService,
   );
+  container.registerSingleton<IPushNotificationService>(
+    TOKENS.IPushNotificationService,
+    ExpoPushNotificationService,
+  );
+  container.registerSingleton<INotificationQueueService>(
+    TOKENS.INotificationQueueService,
+    BullMQNotificationQueueService,
+  );
+  container.registerSingleton<INotificationDispatcherService>(
+    TOKENS.INotificationDispatcherService,
+    NotificationDispatcherService,
+  );
 
   container.registerSingleton<UserRepository>(
     TOKENS.IUserRepository,
@@ -213,6 +234,14 @@ export function registerDependencies(
   container.registerSingleton<CommunityBookingRepository>(
     TOKENS.ICommunityBookingRepository,
     CommunityBookingRepository,
+  );
+  container.registerSingleton<NotificationRepository>(
+    TOKENS.INotificationRepository,
+    NotificationRepository,
+  );
+  container.registerSingleton<DeviceTokenRepository>(
+    TOKENS.IDeviceTokenRepository,
+    DeviceTokenRepository,
   );
 
   container.registerSingleton<AdminAuthMiddleware>(

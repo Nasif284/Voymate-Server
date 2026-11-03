@@ -1,3 +1,4 @@
+import { NotificationController } from '../../presentation/controllers/user/notifications/notification.controller';
 import { container } from 'tsyringe';
 import { AuthController } from '../../presentation/controllers/user/auth/auth.controller';
 import { AdminAuthController } from '../../presentation/controllers/admin/auth/admin.auth.controller';
@@ -47,6 +48,7 @@ export interface AppContainer {
   authMiddlewares: AuthMiddlewares;
   chatController: ChatController;
   callController: CallController;
+  notificationController: NotificationController;
   communityControllers: CommunityControllers;
 }
 
@@ -84,6 +86,7 @@ export function buildContainer(
   const assistantController = container.resolve(AiAssistantController);
   const chatController = container.resolve(ChatController);
   const callController = container.resolve(CallController);
+  const notificationController = container.resolve(NotificationController);
   const adminAnalyticsController = container.resolve(AdminAnalyticsController);
 
   const adminAuthMiddleware = container.resolve(AdminAuthMiddleware);
@@ -125,5 +128,6 @@ export function buildContainer(
     assistantController,
     chatController,
     callController,
+    notificationController,
   };
 }

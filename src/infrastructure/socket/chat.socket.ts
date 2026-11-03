@@ -1,3 +1,6 @@
+import { INotificationDispatcherService } from '../../application/interfaces/services/notification-dispatcher.service.interface';
+import { IUserRepository } from '../../application/interfaces/repositories/user.reposetory';
+import { NotificationType } from '../../domain/enums/notification.constants';
 import { Server, Socket } from 'socket.io';
 import { container } from 'tsyringe';
 
@@ -135,6 +138,46 @@ export function registerChatSocket(io: Server) {
           roomTargets.push(`user:${conversation.userBId}`);
 
         io.to(roomTargets).emit('chat:message', message);
+
+        const recipientUserId =
+          conversation?.userAId === currentUserId
+            ? conversation?.userBId
+            : conversation?.userAId;
+
+        if (recipientUserId) {
+          try {
+            const notificationDispatcher =
+              container.resolve<INotificationDispatcherService>(
+                TOKENS.INotificationDispatcherService,
+              );
+            const userRepo = container.resolve<IUserRepository>(
+              TOKENS.IUserRepository,
+            );
+            const senderUser = await userRepo.findUserById(currentUserId);
+            const senderName = senderUser?.fullName || 'New message';
+
+            notificationDispatcher
+              .dispatch({
+                userId: recipientUserId,
+                type: NotificationType.CHAT_MESSAGE,
+                title: senderName,
+                body: message.content || 'Sent an attachment',
+                data: {
+                  conversationId: message.conversationId,
+                  senderId: currentUserId,
+                  type: 'CHAT_MESSAGE',
+                },
+              })
+              .catch((err) =>
+                console.error(
+                  '[Socket Chat] Failed to dispatch notification:',
+                  err,
+                ),
+              );
+          } catch (dispatchErr) {
+            console.error('[Socket Chat] Dispatch error:', dispatchErr);
+          }
+        }
       } catch (error) {
         socket.emit('chat:error', {
           message:

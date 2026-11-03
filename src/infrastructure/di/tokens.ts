@@ -21,6 +21,8 @@ export const TOKENS = {
   ICommunityRepository: 'ICommunityRepository',
   ICommunityTripRepository: 'ICommunityTripRepository',
   ICommunityBookingRepository: 'ICommunityBookingRepository',
+  INotificationRepository: 'INotificationRepository',
+  IDeviceTokenRepository: 'IDeviceTokenRepository',
 
   AdminAuthenticationMiddleware: 'AdminAuthenticationMiddleware',
   UserAuthMiddleware: 'UserAuthMiddleware',
@@ -49,6 +51,9 @@ export const TOKENS = {
   IPresenceService: 'IPresenceService',
   IMatchingEngine: 'IMatchingEngine',
   IRazorpayPaymentService: 'IRazorpayPaymentService',
+  IPushNotificationService: 'IPushNotificationService',
+  INotificationQueueService: 'INotificationQueueService',
+  INotificationDispatcherService: 'INotificationDispatcherService',
 
   PrismaClient: 'PrismaClient',
   RedisClient: 'RedisClient',

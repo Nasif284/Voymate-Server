@@ -138,3 +138,18 @@ enum CommunityVerificationStatus {
   VERIFIED
   REJECTED
 }
+
+
+enum NotificationType {
+  CONNECTION_REQUEST
+  CONNECTION_ACCEPTED
+  CHAT_MESSAGE
+  TRIP_MATCH
+  SYSTEM_ALERT
+}
+
+enum DevicePlatform {
+  IOS
+  ANDROID
+  WEB
+}

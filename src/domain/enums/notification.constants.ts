@@ -1,0 +1,13 @@
+export enum NotificationType {
+  CONNECTION_REQUEST = 'CONNECTION_REQUEST',
+  CONNECTION_ACCEPTED = 'CONNECTION_ACCEPTED',
+  CHAT_MESSAGE = 'CHAT_MESSAGE',
+  TRIP_MATCH = 'TRIP_MATCH',
+  SYSTEM_ALERT = 'SYSTEM_ALERT',
+}
+
+export enum DevicePlatform {
+  IOS = 'IOS',
+  ANDROID = 'ANDROID',
+  WEB = 'WEB',
+}

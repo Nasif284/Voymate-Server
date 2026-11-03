@@ -1,3 +1,4 @@
+import { buildNotificationRoutes } from './user/notifications/notification.route';
 import { Router } from 'express';
 import { AppContainer } from '../../infrastructure/di/container';
 import { buildAuthRoutes } from './user/auth/auth.route';
@@ -49,6 +50,10 @@ export function buildRoutes(container: AppContainer): Router {
   );
   router.use('/chat', buildChatRoutes(container.chatController, userAuth));
   router.use('/calls', buildCallRoutes(container.callController, userAuth));
+  router.use(
+    '/notifications',
+    buildNotificationRoutes(container.notificationController, userAuth),
+  );
   router.use(
     '/community',
     buildCommunityRoutes(

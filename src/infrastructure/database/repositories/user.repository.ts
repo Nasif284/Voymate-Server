@@ -1014,10 +1014,10 @@ export class UserRepository
   async updateRequestStatus(payload: {
     requestId: string;
     status: string;
-  }): Promise<void> {
+  }): Promise<{ senderId: string; receiverId: string } | null> {
     const normalizedStatus = payload.status.toUpperCase();
     if (normalizedStatus === 'ACCEPTED') {
-      await this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx) => {
         const request = await tx.connectionRequest.update({
           where: {
             id: payload.requestId,
@@ -1035,9 +1035,11 @@ export class UserRepository
             requestId: request.id,
           },
         });
+
+        return { senderId: request.senderId, receiverId: request.receiverId };
       });
     } else {
-      await this.prisma.connectionRequest.update({
+      const request = await this.prisma.connectionRequest.update({
         where: {
           id: payload.requestId,
         },
@@ -1046,6 +1048,7 @@ export class UserRepository
           respondedAt: new Date(),
         },
       });
+      return { senderId: request.senderId, receiverId: request.receiverId };
     }
   }
   async getUserConnections(userId: string): Promise<GetConnectionsResponseDTO> {

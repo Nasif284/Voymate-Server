@@ -60,6 +60,19 @@ export class DeviceTokenEntity {
     this.props.updatedAt = new Date();
   }
 
+  toJSON(): DeviceTokenProps {
+    return {
+      id: this.props.id,
+      userId: this.props.userId,
+      token: this.props.token,
+      platform: this.props.platform,
+      deviceId: this.props.deviceId ?? null,
+      isActive: this.props.isActive,
+      createdAt: this.props.createdAt,
+      updatedAt: this.props.updatedAt,
+    };
+  }
+
   static create(
     props: Omit<
       DeviceTokenProps,

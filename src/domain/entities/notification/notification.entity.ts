@@ -60,6 +60,20 @@ export class NotificationEntity {
     this.props.readAt = new Date();
   }
 
+  toJSON(): NotificationProps {
+    return {
+      id: this.props.id,
+      userId: this.props.userId,
+      type: this.props.type,
+      title: this.props.title,
+      body: this.props.body,
+      data: this.props.data ?? null,
+      isRead: this.props.isRead,
+      readAt: this.props.readAt ?? null,
+      createdAt: this.props.createdAt,
+    };
+  }
+
   static create(
     props: Omit<NotificationProps, 'id' | 'isRead' | 'createdAt'> & {
       id?: string;

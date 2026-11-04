@@ -30,4 +30,5 @@ export interface INotificationRepository {
   ): Promise<number>;
   markAllAsRead(userId: string): Promise<number>;
   getUnreadCount(userId: string): Promise<number>;
+  deleteOldReadNotifications(daysOld?: number): Promise<number>;
 }

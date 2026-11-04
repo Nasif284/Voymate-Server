@@ -54,6 +54,26 @@ export class DeviceTokenRepository implements IDeviceTokenRepository {
       },
     });
 
+    // Cap active device tokens per user at 5 most recently updated devices
+    const staleTokens = await this.prisma.userDeviceToken.findMany({
+      where: {
+        userId: data.userId,
+        isActive: true,
+      },
+      orderBy: { updatedAt: 'desc' },
+      skip: 5,
+      select: { id: true },
+    });
+
+    if (staleTokens.length > 0) {
+      await this.prisma.userDeviceToken.updateMany({
+        where: {
+          id: { in: staleTokens.map((t) => t.id) },
+        },
+        data: { isActive: false },
+      });
+    }
+
     return this.toDomain(record);
   }
 

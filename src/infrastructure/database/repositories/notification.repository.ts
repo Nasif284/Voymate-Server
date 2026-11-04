@@ -190,4 +190,18 @@ export class NotificationRepository implements INotificationRepository {
       where: { userId, isRead: false },
     });
   }
+
+  async deleteOldReadNotifications(daysOld = 30): Promise<number> {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+
+    const result = await this.prisma.notification.deleteMany({
+      where: {
+        isRead: true,
+        createdAt: { lt: cutoffDate },
+      },
+    });
+
+    return result.count;
+  }
 }

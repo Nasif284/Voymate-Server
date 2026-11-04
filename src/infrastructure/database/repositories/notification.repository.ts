@@ -40,6 +40,56 @@ export class NotificationRepository implements INotificationRepository {
   }
 
   async create(data: CreateNotificationDTO): Promise<NotificationEntity> {
+    const conversationId =
+      data.type === DomainNotificationType.CHAT_MESSAGE &&
+      data.data &&
+      typeof data.data.conversationId === 'string'
+        ? data.data.conversationId
+        : null;
+
+    if (conversationId) {
+      const existingUnread = await this.prisma.notification.findFirst({
+        where: {
+          userId: data.userId,
+          type: NotificationType.CHAT_MESSAGE,
+          isRead: false,
+          data: {
+            path: ['conversationId'],
+            equals: conversationId,
+          },
+        },
+      });
+
+      if (existingUnread) {
+        const existingData =
+          (existingUnread.data as Record<string, unknown> | null) ?? {};
+        const prevCount =
+          typeof existingData.unreadMessagesCount === 'number'
+            ? existingData.unreadMessagesCount
+            : 1;
+        const nextCount = prevCount + 1;
+
+        const updatedRecord = await this.prisma.notification.update({
+          where: { id: existingUnread.id },
+          data: {
+            title: data.title,
+            body:
+              nextCount > 1
+                ? `(${nextCount} new messages) ${data.body}`
+                : data.body,
+            data: {
+              ...existingData,
+              ...(data.data ?? {}),
+              unreadMessagesCount: nextCount,
+            } as Prisma.InputJsonValue,
+            createdAt: new Date(),
+          },
+        });
+
+        return this.toDomain(updatedRecord);
+      }
+    }
+
     const record = await this.prisma.notification.create({
       data: {
         userId: data.userId,
@@ -100,6 +150,28 @@ export class NotificationRepository implements INotificationRepository {
       },
     });
     return result.count > 0;
+  }
+
+  async markConversationAsRead(
+    userId: string,
+    conversationId: string,
+  ): Promise<number> {
+    const result = await this.prisma.notification.updateMany({
+      where: {
+        userId,
+        type: NotificationType.CHAT_MESSAGE,
+        isRead: false,
+        data: {
+          path: ['conversationId'],
+          equals: conversationId,
+        },
+      },
+      data: {
+        isRead: true,
+        readAt: new Date(),
+      },
+    });
+    return result.count;
   }
 
   async markAllAsRead(userId: string): Promise<number> {

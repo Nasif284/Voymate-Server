@@ -24,6 +24,10 @@ export interface INotificationRepository {
   ): Promise<NotificationPaginationResult>;
   findById(id: string): Promise<NotificationEntity | null>;
   markAsRead(id: string, userId: string): Promise<boolean>;
+  markConversationAsRead(
+    userId: string,
+    conversationId: string,
+  ): Promise<number>;
   markAllAsRead(userId: string): Promise<number>;
   getUnreadCount(userId: string): Promise<number>;
 }

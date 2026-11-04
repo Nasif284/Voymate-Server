@@ -1,5 +1,4 @@
 import { NotificationType } from '../../../domain/enums/notification.constants';
-import { NotificationEntity } from '../../../domain/entities/notification/notification.entity';
 
 export interface DispatchNotificationDTO {
   userId: string;
@@ -10,5 +9,5 @@ export interface DispatchNotificationDTO {
 }
 
 export interface INotificationDispatcherService {
-  dispatch(dto: DispatchNotificationDTO): Promise<NotificationEntity>;
+  dispatch(dto: DispatchNotificationDTO): Promise<void>;
 }

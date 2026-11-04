@@ -1,6 +1,3 @@
-import { INotificationDispatcherService } from '../../application/interfaces/services/notification-dispatcher.service.interface';
-import { IUserRepository } from '../../application/interfaces/repositories/user.reposetory';
-import { NotificationType } from '../../domain/enums/notification.constants';
 import { Server, Socket } from 'socket.io';
 import { container } from 'tsyringe';
 
@@ -10,6 +7,10 @@ import { IJoinChatConversationValidationUseCase } from '../../application/interf
 import { IPresenceService } from '../../application/interfaces/services/presence.service.interface';
 import { IMarkMessagesAsReadUseCase } from '../../application/interfaces/use-cases/chats/mark-messages-read.interface';
 import { IChatRepository } from '../../application/interfaces/repositories/chat.repository';
+import { INotificationDispatcherService } from '../../application/interfaces/services/notification-dispatcher.service.interface';
+import { INotificationRepository } from '../../application/interfaces/repositories/notification.repository.interface';
+import { IUserRepository } from '../../application/interfaces/repositories/user.reposetory';
+import { NotificationType } from '../../domain/enums/notification.constants';
 
 export function registerChatSocket(io: Server) {
   io.on('connection', (socket: Socket) => {
@@ -18,6 +19,20 @@ export function registerChatSocket(io: Server) {
 
     if (userId) {
       socket.join(`user:${userId}`);
+
+      // Cache sender fullName on socket session once on connect
+      const userRepo = container.resolve<IUserRepository>(
+        TOKENS.IUserRepository,
+      );
+      userRepo
+        .findUserById(userId)
+        .then((u) => {
+          if (u?.fullName) {
+            socket.data.fullName = u.fullName;
+          }
+        })
+        .catch(() => {});
+
       const presenceService = container.resolve<IPresenceService>(
         TOKENS.IPresenceService,
       );
@@ -107,6 +122,27 @@ export function registerChatSocket(io: Server) {
           readerId: currentUserId,
           readAt: result.readAt,
         });
+
+        // Automatically mark unread CHAT_MESSAGE notifications for this conversation as read
+        const notificationRepo = container.resolve<INotificationRepository>(
+          TOKENS.INotificationRepository,
+        );
+        notificationRepo
+          .markConversationAsRead(currentUserId, data.conversationId)
+          .then((updatedCount) => {
+            if (updatedCount > 0) {
+              io.to(`user:${currentUserId}`).emit(
+                'notification:conversation_read',
+                {
+                  conversationId: data.conversationId,
+                  updatedCount,
+                },
+              );
+            }
+          })
+          .catch((err) =>
+            console.error('[Socket] Notification mark read error:', err),
+          );
       } catch (error) {
         console.error('[Socket] Mark read error:', error);
       }
@@ -146,34 +182,49 @@ export function registerChatSocket(io: Server) {
 
         if (recipientUserId) {
           try {
-            const notificationDispatcher =
-              container.resolve<INotificationDispatcherService>(
-                TOKENS.INotificationDispatcherService,
-              );
-            const userRepo = container.resolve<IUserRepository>(
-              TOKENS.IUserRepository,
+            // Suppress notification if recipient is actively viewing this conversation
+            const roomSockets = await io
+              .in(`conversation:${message.conversationId}`)
+              .fetchSockets();
+            const isRecipientInConversation = roomSockets.some(
+              (s) => s.data.userId === recipientUserId,
             );
-            const senderUser = await userRepo.findUserById(currentUserId);
-            const senderName = senderUser?.fullName || 'New message';
 
-            notificationDispatcher
-              .dispatch({
-                userId: recipientUserId,
-                type: NotificationType.CHAT_MESSAGE,
-                title: senderName,
-                body: message.content || 'Sent an attachment',
-                data: {
-                  conversationId: message.conversationId,
-                  senderId: currentUserId,
-                  type: 'CHAT_MESSAGE',
-                },
-              })
-              .catch((err) =>
-                console.error(
-                  '[Socket Chat] Failed to dispatch notification:',
-                  err,
-                ),
-              );
+            if (!isRecipientInConversation) {
+              let senderName = socket.data.fullName as string | undefined;
+              if (!senderName) {
+                const userRepo = container.resolve<IUserRepository>(
+                  TOKENS.IUserRepository,
+                );
+                const senderUser = await userRepo.findUserById(currentUserId);
+                senderName = senderUser?.fullName || 'New message';
+                socket.data.fullName = senderName;
+              }
+
+              const notificationDispatcher =
+                container.resolve<INotificationDispatcherService>(
+                  TOKENS.INotificationDispatcherService,
+                );
+
+              notificationDispatcher
+                .dispatch({
+                  userId: recipientUserId,
+                  type: NotificationType.CHAT_MESSAGE,
+                  title: senderName,
+                  body: message.content || 'Sent an attachment',
+                  data: {
+                    conversationId: message.conversationId,
+                    senderId: currentUserId,
+                    type: 'CHAT_MESSAGE',
+                  },
+                })
+                .catch((err) =>
+                  console.error(
+                    '[Socket Chat] Failed to dispatch notification:',
+                    err,
+                  ),
+                );
+            }
           } catch (dispatchErr) {
             console.error('[Socket Chat] Dispatch error:', dispatchErr);
           }

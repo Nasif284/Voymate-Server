@@ -4,5 +4,7 @@ export interface IGetMatchProfile {
   execute(dto: {
     matchId: string;
     userId: string;
+    sourceTripId?: string;
+    mode?: 'TRIP' | 'SEARCH';
   }): Promise<GetMatchProfileResponseDTO>;
 }

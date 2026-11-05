@@ -257,15 +257,12 @@ export class SearchTripMatches implements ISearchTripMatches {
     const matches: TripMatch[] = await Promise.all(
       paginatedItems.map(async ({ trip, searchResult }) => {
         if (hasSearchFilters && searchResult) {
-          const cacheKey = `match:v2:${dto.userId}:trip:${trip.id}`;
-          await this._cacheService.set(
-            cacheKey,
-            1800,
-            JSON.stringify({
-              totalScore: searchResult.totalScore,
-              reasons: searchResult.reasons,
-            }),
-          );
+          const payload = JSON.stringify({
+            totalScore: searchResult.totalScore,
+            reasons: searchResult.reasons,
+          });
+          const searchCacheKey = `match:v2:${dto.userId}:search:trip:${trip.id}`;
+          await this._cacheService.set(searchCacheKey, 1800, payload);
         }
 
         const signedAvatar = trip.creator.avatarUrl
@@ -299,6 +296,10 @@ export class SearchTripMatches implements ISearchTripMatches {
             totalPoints: hasSearchFilters
               ? (searchResult?.totalScore ?? 0)
               : null,
+            explanation:
+              hasSearchFilters && searchResult
+                ? { reasons: searchResult.reasons }
+                : undefined,
             dateFrom: trip.dateFrom,
             dateTo: trip.dateTo,
             destination: trip.destinationName,

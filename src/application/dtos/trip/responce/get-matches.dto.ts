@@ -29,6 +29,9 @@ export interface TripMatch {
     id: string;
     matchedTripId: string;
     totalPoints?: number | null;
+    explanation?: {
+      reasons?: string[];
+    };
     dateFrom: Date;
     dateTo: Date;
     destination: string;

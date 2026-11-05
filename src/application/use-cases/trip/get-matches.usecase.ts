@@ -211,15 +211,12 @@ export class GetTripMatches implements IGetTripMatches {
     // Snapshot card scores in Redis for instant, guaranteed-consistent detail page loads (TTL: 30 mins)
     await Promise.all(
       paginatedMatches.map(async ({ candidate, result }) => {
-        const cacheKey = `match:v2:${sourceTrip.creator.id}:trip:${candidate.id}`;
-        await this._cacheService.set(
-          cacheKey,
-          1800,
-          JSON.stringify({
-            totalScore: result.totalScore,
-            reasons: result.reasons,
-          }),
-        );
+        const payload = JSON.stringify({
+          totalScore: result.totalScore,
+          reasons: result.reasons,
+        });
+        const sourceCacheKey = `match:v2:${sourceTrip.creator.id}:source:${sourceTrip.id}:trip:${candidate.id}`;
+        await this._cacheService.set(sourceCacheKey, 1800, payload);
       }),
     );
 
@@ -255,6 +252,9 @@ export class GetTripMatches implements IGetTripMatches {
             id: candidate.id,
             matchedTripId: candidate.id,
             totalPoints: result.totalScore,
+            explanation: {
+              reasons: result.reasons,
+            },
             destination: candidate.destinationName,
             dateFrom: candidate.dateFrom,
             dateTo: candidate.dateTo,

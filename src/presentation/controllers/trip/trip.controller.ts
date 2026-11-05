@@ -168,9 +168,12 @@ export class TripController {
   getMatchProfile = async (req: Request, res: Response): Promise<Response> => {
     const { matchId } = req.params;
     const userId = req.user?.userId;
+    const { sourceTripId, mode } = req.query;
     const data = await this._getMatchProfile.execute({
       matchId: matchId as string,
       userId: userId!,
+      sourceTripId: sourceTripId as string | undefined,
+      mode: mode as 'TRIP' | 'SEARCH' | undefined,
     });
     return res
       .status(HttpStatus.OK)

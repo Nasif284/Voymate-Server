@@ -30,6 +30,8 @@ export class GetMatchProfile implements IGetMatchProfile {
   async execute(dto: {
     matchId: string;
     userId: string;
+    sourceTripId?: string;
+    mode?: 'TRIP' | 'SEARCH';
   }): Promise<GetMatchProfileResponseDTO> {
     // 1. Fetch the target matched trip directly by its ID
     const targetTrip = await this._tripRepository.getDetailedTrip(dto.matchId);
@@ -37,8 +39,17 @@ export class GetMatchProfile implements IGetMatchProfile {
       throw new Error('Matched trip not found');
     }
 
-    const cacheKey = `match:v2:${dto.userId}:trip:${dto.matchId}`;
-    const cached = await this._cacheService.get(cacheKey);
+    // Context-specific cache lookup:
+    const targetCacheKey =
+      dto.mode === 'SEARCH'
+        ? `match:v2:${dto.userId}:search:trip:${dto.matchId}`
+        : dto.sourceTripId
+          ? `match:v2:${dto.userId}:source:${dto.sourceTripId}:trip:${dto.matchId}`
+          : null;
+
+    const cached = targetCacheKey
+      ? await this._cacheService.get(targetCacheKey)
+      : null;
 
     let totalScore: number;
     let reasons: string[];
@@ -144,11 +155,13 @@ export class GetMatchProfile implements IGetMatchProfile {
       }
 
       // Re-populate Redis cache for subsequent requests (TTL: 30 minutes)
-      await this._cacheService.set(
-        cacheKey,
-        1800,
-        JSON.stringify({ totalScore, reasons }),
-      );
+      if (targetCacheKey) {
+        await this._cacheService.set(
+          targetCacheKey,
+          1800,
+          JSON.stringify({ totalScore, reasons }),
+        );
+      }
     }
     const relationships = await this._userRepository.getRelationshipsForUsers(
       dto.userId,

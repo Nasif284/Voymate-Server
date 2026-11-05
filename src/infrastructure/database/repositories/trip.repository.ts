@@ -268,7 +268,14 @@ export class TripRepository
     limit: number,
   ): Promise<TripMatchResponseDTO> {
     const skip = (page - 1) * limit;
-    const where = {
+
+    const sourceTrip = await this.prisma.trip.findUnique({
+      where: { id: tripId },
+      select: { createdBy: true },
+    });
+    const currentUserId = sourceTrip?.createdBy;
+
+    const where: Prisma.TripMatchWhereInput = {
       OR: [
         {
           tripAId: tripId,
@@ -277,6 +284,14 @@ export class TripRepository
             dateTo: {
               gte: new Date(),
             },
+            ...(currentUserId
+              ? {
+                  creator: {
+                    blocksInitiated: { none: { blockedId: currentUserId } },
+                    blocksReceived: { none: { blockerId: currentUserId } },
+                  },
+                }
+              : {}),
           },
         },
         {
@@ -286,6 +301,14 @@ export class TripRepository
             dateTo: {
               gte: new Date(),
             },
+            ...(currentUserId
+              ? {
+                  creator: {
+                    blocksInitiated: { none: { blockedId: currentUserId } },
+                    blocksReceived: { none: { blockerId: currentUserId } },
+                  },
+                }
+              : {}),
           },
         },
       ],

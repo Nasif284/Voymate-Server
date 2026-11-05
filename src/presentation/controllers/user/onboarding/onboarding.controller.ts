@@ -52,6 +52,7 @@ export class OnboardingController {
       languages,
       city,
       state,
+      defaultCoverUrl,
     } = req.body;
     console.log(req.file, req.body);
     const userId = req.user?.userId;
@@ -65,7 +66,7 @@ export class OnboardingController {
     if (!userId) {
       throw new UserNotFoundError();
     }
-    if (!profileImage || !coverImage) {
+    if (!profileImage) {
       throw new ImageMissingError();
     }
 
@@ -82,9 +83,10 @@ export class OnboardingController {
         capitalizeFirstLetter(s),
       ),
       imageBuffer: profileImage.buffer,
-      coverImageBuffer: coverImage.buffer,
       profMimeType: profileImage.mimetype,
-      coverMimeType: coverImage.mimetype,
+      coverImageBuffer: coverImage?.buffer,
+      coverMimeType: coverImage?.mimetype,
+      defaultCoverUrl: defaultCoverUrl || undefined,
       city,
       state,
     };

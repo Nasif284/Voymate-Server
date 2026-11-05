@@ -461,6 +461,8 @@ export class UserRepository
           accountStatus: AccountStatus.ACTIVE,
           deletedAt: null,
           onboarding: { onboardingCompleted: true },
+          blocksInitiated: { none: { blockedId: currentUserId } },
+          blocksReceived: { none: { blockerId: currentUserId } },
         },
       },
       orderBy: { dateFrom: 'asc' },
@@ -643,6 +645,11 @@ export class UserRepository
           AND u.account_status = 'ACTIVE'
           AND (uo.onboarding_completed = true OR uo.user_id IS NULL)
           AND u.is_traveling = true
+          AND u.id NOT IN (
+            SELECT blocked_id FROM user_blocks WHERE blocker_id = ${currentUserId}::uuid
+            UNION
+            SELECT blocker_id FROM user_blocks WHERE blocked_id = ${currentUserId}::uuid
+          )
           AND (
             (ul.current_lat IS NOT NULL AND ul.current_lng IS NOT NULL)
             OR ul.coordinates IS NOT NULL
@@ -705,6 +712,11 @@ export class UserRepository
           AND u.account_status = 'ACTIVE'
           AND (uo.onboarding_completed = true OR uo.user_id IS NULL)
           AND u.is_traveling = true
+          AND u.id NOT IN (
+            SELECT blocked_id FROM user_blocks WHERE blocker_id = ${currentUserId}::uuid
+            UNION
+            SELECT blocker_id FROM user_blocks WHERE blocked_id = ${currentUserId}::uuid
+          )
           AND (
             (ul.current_lat IS NOT NULL AND ul.current_lng IS NOT NULL)
             OR ul.coordinates IS NOT NULL
@@ -1310,5 +1322,84 @@ export class UserRepository
     }
 
     return result;
+  }
+
+  async deleteAccount(userId: string): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      // 1. Deactivate all connections
+      await tx.connection.updateMany({
+        where: {
+          OR: [{ userAId: userId }, { userBId: userId }],
+        },
+        data: { isActive: false },
+      });
+
+      // 2. Decline/cancel any pending connection requests
+      await tx.connectionRequest.updateMany({
+        where: {
+          OR: [{ senderId: userId }, { receiverId: userId }],
+          status: 'PENDING',
+        },
+        data: { status: 'CANCELLED' },
+      });
+
+      // 3. Delete device tokens so user no longer receives notifications
+      await tx.userDeviceToken.deleteMany({
+        where: { userId },
+      });
+
+      // 4. Cancel active and upcoming trips created by user
+      await tx.trip.updateMany({
+        where: { creatorId: userId, status: { in: ['ACTIVE', 'UPCOMING'] } },
+        data: { status: 'CANCELLED' },
+      });
+
+      // 5. Update user record: scrub PII and soft-delete
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          deletedAt: new Date(),
+          accountStatus: 'DEACTIVATED',
+          isTraveling: false,
+          fullName: 'Deleted Traveler',
+          email: `deleted_${Date.now()}_${userId.slice(0, 8)}@deleted.voymate.app`,
+          phone: null,
+          passwordHash: null,
+          avatarUrl: null,
+          coverUrl: null,
+          bio: null,
+        },
+      });
+    });
+  }
+
+  async blockUserRelationship(
+    userId: string,
+    targetUserId: string,
+  ): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      // Deactivate any existing connection between them
+      await tx.connection.updateMany({
+        where: {
+          OR: [
+            { userAId: userId, userBId: targetUserId },
+            { userAId: targetUserId, userBId: userId },
+          ],
+        },
+        data: { isActive: false },
+      });
+
+      // Decline/cancel pending requests between them
+      await tx.connectionRequest.updateMany({
+        where: {
+          OR: [
+            { senderId: userId, receiverId: targetUserId },
+            { senderId: targetUserId, receiverId: userId },
+          ],
+          status: 'PENDING',
+        },
+        data: { status: 'DECLINED' },
+      });
+    });
   }
 }

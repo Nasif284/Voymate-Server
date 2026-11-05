@@ -12,6 +12,9 @@ import { IGetSettings } from '../../../../application/interfaces/use-cases/profi
 import { ISubmitVerificationUseCase } from '../../../../application/interfaces/use-cases/profile/doc-verification.interface';
 import { SubmitVerificationRequestDTO } from '../../../../application/dtos/profile/request/doc-verification.dto';
 import { IGetDocVerification } from '../../../../application/interfaces/use-cases/profile/get-doc-verification.interface';
+import { IUserRepository } from '../../../../application/interfaces/repositories/user.reposetory';
+import { ISafetyRepository } from '../../../../application/interfaces/repositories/safety.repository.interface';
+import logger from '../../../../infrastructure/logging/logger';
 
 @injectable()
 export class ProfileController {
@@ -28,6 +31,10 @@ export class ProfileController {
     private readonly _submitVerification: ISubmitVerificationUseCase,
     @inject(TOKENS.IGetDocVerification)
     private readonly _getDocVerification: IGetDocVerification,
+    @inject(TOKENS.IUserRepository)
+    private readonly _userRepository: IUserRepository,
+    @inject(TOKENS.ISafetyRepository)
+    private readonly _safetyRepository: ISafetyRepository,
   ) {}
   updateProfile = async (req: Request, res: Response): Promise<Response> => {
     const userId = req.user?.userId;
@@ -134,5 +141,110 @@ export class ProfileController {
     return res
       .status(HttpStatus.OK)
       .json(ApiResponse.success(PROFILE_MESSAGES.GET_DOC_VERIFICATION, result));
+  };
+
+  deleteAccount = async (req: Request, res: Response): Promise<Response> => {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res
+        .status(HttpStatus.UNAUTHORIZED)
+        .json(ApiResponse.error('UNAUTHORIZED', 'User not authenticated'));
+    }
+    await this._userRepository.deleteAccount(userId);
+    logger.info(`User ${userId} deleted their account`);
+    return res
+      .status(HttpStatus.OK)
+      .json(ApiResponse.success('Account successfully deleted'));
+  };
+
+  blockUser = async (req: Request, res: Response): Promise<Response> => {
+    const userId = req.user?.userId;
+    const { targetUserId } = req.body;
+    if (!userId) {
+      return res
+        .status(HttpStatus.UNAUTHORIZED)
+        .json(ApiResponse.error('UNAUTHORIZED', 'User not authenticated'));
+    }
+    if (!targetUserId) {
+      return res
+        .status(HttpStatus.BAD_REQUEST)
+        .json(ApiResponse.error('INVALID_REQUEST', 'targetUserId is required'));
+    }
+    await this._safetyRepository.blockUser(userId, targetUserId);
+    return res
+      .status(HttpStatus.OK)
+      .json(ApiResponse.success('User blocked successfully'));
+  };
+
+  unblockUser = async (req: Request, res: Response): Promise<Response> => {
+    const userId = req.user?.userId;
+    const targetUserId = req.params.targetUserId || req.body.targetUserId;
+    if (!userId) {
+      return res
+        .status(HttpStatus.UNAUTHORIZED)
+        .json(ApiResponse.error('UNAUTHORIZED', 'User not authenticated'));
+    }
+    if (!targetUserId) {
+      return res
+        .status(HttpStatus.BAD_REQUEST)
+        .json(ApiResponse.error('INVALID_REQUEST', 'targetUserId is required'));
+    }
+    await this._safetyRepository.unblockUser(userId, targetUserId);
+    return res
+      .status(HttpStatus.OK)
+      .json(ApiResponse.success('User unblocked successfully'));
+  };
+
+  getBlockedUsers = async (req: Request, res: Response): Promise<Response> => {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res
+        .status(HttpStatus.UNAUTHORIZED)
+        .json(ApiResponse.error('UNAUTHORIZED', 'User not authenticated'));
+    }
+    const blockedUsers = await this._safetyRepository.getBlockedUsers(userId);
+    return res
+      .status(HttpStatus.OK)
+      .json(
+        ApiResponse.success(
+          'Blocked users retrieved successfully',
+          blockedUsers,
+        ),
+      );
+  };
+
+  reportUser = async (req: Request, res: Response): Promise<Response> => {
+    const userId = req.user?.userId;
+    const { targetUserId, reason, details, category } = req.body;
+    if (!userId) {
+      return res
+        .status(HttpStatus.UNAUTHORIZED)
+        .json(ApiResponse.error('UNAUTHORIZED', 'User not authenticated'));
+    }
+    if (!targetUserId || !reason) {
+      return res
+        .status(HttpStatus.BAD_REQUEST)
+        .json(
+          ApiResponse.error(
+            'INVALID_REQUEST',
+            'targetUserId and reason are required',
+          ),
+        );
+    }
+    const report = await this._safetyRepository.createReport({
+      reporterId: userId,
+      reportedUserId: targetUserId,
+      category,
+      reason,
+      details,
+    });
+    return res
+      .status(HttpStatus.CREATED)
+      .json(
+        ApiResponse.success(
+          'Report submitted successfully. Our safety team will review it.',
+          report,
+        ),
+      );
   };
 }

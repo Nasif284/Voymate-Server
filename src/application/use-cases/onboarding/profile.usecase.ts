@@ -21,12 +21,20 @@ export class SetUserProfile implements ISetUserProfile {
       avatarKey,
       dto.profMimeType,
     );
-    const coverKey = `users/cover-images/${crypto.randomUUID()}`;
-    await this._storageService.upload(
-      dto.coverImageBuffer,
-      coverKey,
-      dto.coverMimeType,
-    );
+    let coverKey: string | null;
+    if (dto.coverImageBuffer && dto.coverMimeType) {
+      coverKey = `users/cover-images/${crypto.randomUUID()}`;
+      await this._storageService.upload(
+        dto.coverImageBuffer,
+        coverKey,
+        dto.coverMimeType,
+      );
+    } else if (dto.defaultCoverUrl) {
+      coverKey = dto.defaultCoverUrl;
+    } else {
+      coverKey =
+        'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=80';
+    }
     await this._userRepository.updateUser(dto.userId, {
       dateOfBirth: dto.dateOfBirth,
       avatarUrl: avatarKey,

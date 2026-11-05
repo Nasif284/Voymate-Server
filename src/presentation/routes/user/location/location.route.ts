@@ -15,5 +15,23 @@ export function buildLocationRoutes(
   );
   router.get('/', userAuth.authenticate, asyncHandler(controller.getLocation));
   router.post('/reverse-geocode', asyncHandler(controller.reverseGeoCode));
+  router.post(
+    '/places/autocomplete',
+    userAuth.authenticate,
+    asyncHandler(controller.placesAutocomplete),
+  );
+  router.get(
+    '/places/:placeId',
+    userAuth.authenticate,
+    asyncHandler(controller.getPlaceDetails),
+  );
+  router.post(
+    '/places/details',
+    userAuth.authenticate,
+    asyncHandler(controller.getPlaceDetails),
+  );
+  router.get('/catalog/countries', asyncHandler(controller.getCountries));
+  router.get('/catalog/states', asyncHandler(controller.getStates));
+  router.get('/catalog/cities', asyncHandler(controller.getCities));
   return router;
 }

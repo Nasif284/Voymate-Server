@@ -47,5 +47,30 @@ export function buildProfileRoutes(
     userAuth.authenticate,
     asyncHandler(controller.getDocVerification),
   );
+  router.delete(
+    '/account',
+    userAuth.authenticate,
+    asyncHandler(controller.deleteAccount),
+  );
+  router.post(
+    '/block',
+    userAuth.authenticate,
+    asyncHandler(controller.blockUser),
+  );
+  router.delete(
+    '/block/:targetUserId',
+    userAuth.authenticate,
+    asyncHandler(controller.unblockUser),
+  );
+  router.get(
+    '/blocked-users',
+    userAuth.authenticate,
+    asyncHandler(controller.getBlockedUsers),
+  );
+  router.post(
+    '/report',
+    userAuth.authenticate,
+    asyncHandler(controller.reportUser),
+  );
   return router;
 }

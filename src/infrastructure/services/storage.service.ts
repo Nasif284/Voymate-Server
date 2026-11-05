@@ -22,6 +22,10 @@ export class StorageService implements IStorageService {
     return key;
   }
   async getSignedUrl(key: string): Promise<string> {
+    if (!key) return '';
+    if (key.startsWith('http://') || key.startsWith('https://')) {
+      return key;
+    }
     const command = new GetObjectCommand({
       Bucket: config.s3.bucketName,
       Key: key,
@@ -32,6 +36,9 @@ export class StorageService implements IStorageService {
     });
   }
   async delete(key: string): Promise<void> {
+    if (!key || key.startsWith('http://') || key.startsWith('https://')) {
+      return;
+    }
     await s3Client.send(
       new DeleteObjectCommand({
         Bucket: config.s3.bucketName,

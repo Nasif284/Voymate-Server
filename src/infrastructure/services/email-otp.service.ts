@@ -60,6 +60,19 @@ export class RedisOtpService implements IOtpService {
     code: string,
     purpose: OtpPurpose,
   ): Promise<void> {
+    // Reviewer bypass for App Store / Google Play verification tests
+    const normalizedEmail = email.trim().toLowerCase();
+    const isReviewer =
+      normalizedEmail === 'apple.review@voymate.app' ||
+      normalizedEmail === 'google.review@voymate.app' ||
+      normalizedEmail === 'reviewer@voymate.app' ||
+      (normalizedEmail.endsWith('@voymate.app') &&
+        normalizedEmail.includes('review'));
+
+    if (isReviewer && code === '123456') {
+      return;
+    }
+
     const raw = await this._cache.get(this._key(email, purpose));
 
     if (!raw) throw new OtpNotFoundError();

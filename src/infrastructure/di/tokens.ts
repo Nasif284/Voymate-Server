@@ -23,6 +23,7 @@ export const TOKENS = {
   ICommunityBookingRepository: 'ICommunityBookingRepository',
   INotificationRepository: 'INotificationRepository',
   IDeviceTokenRepository: 'IDeviceTokenRepository',
+  ISafetyRepository: 'ISafetyRepository',
 
   AdminAuthenticationMiddleware: 'AdminAuthenticationMiddleware',
   UserAuthMiddleware: 'UserAuthMiddleware',

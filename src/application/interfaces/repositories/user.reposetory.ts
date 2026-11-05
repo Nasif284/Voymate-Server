@@ -90,4 +90,6 @@ export interface IUserRepository {
     currentUserId: string,
     targetUserIds: string[],
   ): Promise<Record<string, RelationshipInfo>>;
+  deleteAccount(userId: string): Promise<void>;
+  blockUserRelationship(userId: string, targetUserId: string): Promise<void>;
 }

@@ -153,3 +153,19 @@ enum DevicePlatform {
   ANDROID
   WEB
 }
+
+enum ReportCategory {
+  HARASSMENT
+  INAPPROPRIATE_CONTENT
+  SPAM_OR_SCAM
+  IMPERSONATION
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  IN_REVIEW
+  ACTION_TAKEN
+  DISMISSED
+}
+

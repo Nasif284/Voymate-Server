@@ -42,6 +42,7 @@ import { CommunityTripRepository } from '../database/repositories/community-trip
 import { CommunityBookingRepository } from '../database/repositories/community-booking.repository';
 import { NotificationRepository } from '../database/repositories/notification.repository';
 import { DeviceTokenRepository } from '../database/repositories/device-token.repository';
+import { SafetyRepository } from '../database/repositories/safety.repository';
 import { RazorpayPaymentService } from '../services/razorpay.service';
 import { CommunityAuthMiddleware } from '../../presentation/middleware/user/auth/communityAuth.middleware';
 import { TwilioSmsService } from '../services/sms-service.service';
@@ -242,6 +243,10 @@ export function registerDependencies(
   container.registerSingleton<DeviceTokenRepository>(
     TOKENS.IDeviceTokenRepository,
     DeviceTokenRepository,
+  );
+  container.registerSingleton<SafetyRepository>(
+    TOKENS.ISafetyRepository,
+    SafetyRepository,
   );
 
   container.registerSingleton<AdminAuthMiddleware>(

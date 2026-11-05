@@ -59,6 +59,10 @@ model User {
   communityTripBookings    CommunityTripBooking[]
   deviceTokens             UserDeviceToken[]
   notifications            Notification[]
+  blocksInitiated          UserBlock[]             @relation("BlocksInitiated")
+  blocksReceived           UserBlock[]             @relation("BlocksReceived")
+  reportsSubmitted         UserReport[]            @relation("ReportsSubmitted")
+  reportsReceived          UserReport[]            @relation("ReportsReceived")
 
   @@index([email])
   @@index([phone])

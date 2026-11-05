@@ -10,6 +10,7 @@ export interface OnboardingProfileRequestDTO {
   languages: string[];
   imageBuffer: Buffer;
   profMimeType: string;
-  coverImageBuffer: Buffer;
-  coverMimeType: string;
+  coverImageBuffer?: Buffer;
+  coverMimeType?: string;
+  defaultCoverUrl?: string;
 }

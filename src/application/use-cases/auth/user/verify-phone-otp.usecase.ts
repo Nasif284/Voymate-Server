@@ -19,6 +19,12 @@ export class VerifyPhoneOtp implements IVerifyPhoneOtp {
   async execute(dto: VerifyPhoneOtpRequestDTO): Promise<void> {
     const { phone, otp } = dto;
 
+    // Reviewer bypass for App Store / Google Play review
+    if (phone.startsWith('+1555') && otp === '123456') {
+      await this.userRepository.verifyPhone(dto.userId, phone);
+      return;
+    }
+
     const storedOtp = await this.phoneOtpService.get(phone);
 
     if (!storedOtp || storedOtp !== otp) {

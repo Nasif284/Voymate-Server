@@ -4,6 +4,7 @@ import { IUpdateProfile } from '../../interfaces/use-cases/profile/update-profil
 import { TOKENS } from '../../../infrastructure/di/tokens';
 import { IUserRepository } from '../../interfaces/repositories/user.reposetory';
 import { UpdateProfileRequestDTO } from '../../dtos/profile/request/update-profile.dto';
+import { capitalizeFirstLetter } from '../../../shared/helpers/capitalizseFirstLetter';
 
 @injectable()
 export class UpdateProfile implements IUpdateProfile {
@@ -30,14 +31,23 @@ export class UpdateProfile implements IUpdateProfile {
     if (languages !== undefined) {
       await this._userRepository.deleteLanguages(user.id);
       if (Array.isArray(languages) && languages.length > 0) {
-        await this._userRepository.createLanguages(dto.userId, languages);
+        const formattedLanguages = languages.map((l: string) =>
+          capitalizeFirstLetter(l),
+        );
+        await this._userRepository.createLanguages(
+          dto.userId,
+          formattedLanguages,
+        );
       }
     }
 
     if (skills !== undefined) {
       await this._userRepository.deleteSkills(user.id);
       if (Array.isArray(skills) && skills.length > 0) {
-        await this._userRepository.createSkills(dto.userId, skills);
+        const formattedSkills = skills.map((s: string) =>
+          capitalizeFirstLetter(s),
+        );
+        await this._userRepository.createSkills(dto.userId, formattedSkills);
       }
     }
 

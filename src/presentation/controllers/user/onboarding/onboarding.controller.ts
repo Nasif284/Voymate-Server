@@ -108,7 +108,18 @@ export class OnboardingController {
     res: Response,
   ): Promise<Response> => {
     const userId = req.user?.userId;
-    await this._editOnboardingProfile.execute({ userId, ...req.body });
+    const body = { ...req.body };
+    if (Array.isArray(body.travelSkills)) {
+      body.travelSkills = body.travelSkills.map((s: string) =>
+        capitalizeFirstLetter(s),
+      );
+    }
+    if (Array.isArray(body.languages)) {
+      body.languages = body.languages.map((l: string) =>
+        capitalizeFirstLetter(l),
+      );
+    }
+    await this._editOnboardingProfile.execute({ userId, ...body });
     return res
       .status(HttpStatus.OK)
       .json(ApiResponse.success(ONBOARDING_MESSAGES.USER_PROFILE_UPDATED));
